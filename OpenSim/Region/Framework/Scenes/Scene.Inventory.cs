@@ -358,6 +358,82 @@ namespace OpenSim.Region.Framework.Scenes
             return new UpdateItemResponse();
         }
 
+        /// <summary>
+        /// Capability originating call to update the asset of a notecard in a prim's (task's) inventory.
+        /// </summary>
+        public UpdateItemResponse CapsUpdateTaskInventoryNotecardAsset(IClientAPI remoteClient, UUID itemId,
+            UUID primId, byte[] data)
+        {
+            if (!Permissions.CanEditNotecard(itemId, primId, remoteClient.AgentId))
+            {
+                remoteClient.SendAgentAlertMessage("Insufficient permissions to edit notecard", false);
+                return new UpdateItemResponse();
+            }
+
+            SceneObjectPart part = GetSceneObjectPart(primId);
+            SceneObjectGroup group = part == null ? null : part.ParentGroup;
+            if (group == null)
+            {
+                m_log.ErrorFormat("[PRIM INVENTORY]: Prim inventory update requested for notecard ID {0} in prim ID {1} but this prim does not exist",
+                    itemId, primId);
+                return new UpdateItemResponse();
+            }
+
+            TaskInventoryItem item = group.GetInventoryItem(part.LocalId, itemId);
+            if (item == null)
+            {
+                m_log.ErrorFormat(
+                    "[PRIM INVENTORY]: Tried to retrieve notecard item ID {0} from prim {1}, {2} for caps update but the item does not exist",
+                    itemId, part == null ? "unknown" : part.Name, primId);
+                return new UpdateItemResponse();
+            }
+
+            AssetBase asset = CreateAsset(item.Name, item.Description, (sbyte)AssetType.Notecard, data);
+            m_log.InfoFormat("[ASSETS]: CapsUpdateTaskInventoryNotecardAsset created new asset {0} -> {1} for {2}", item.AssetID, asset.FullID, item.Name);
+
+            try
+            {
+                CommsManager.AssetCache.AddAsset(asset, AssetRequestInfo.GenericNetRequest());
+            }
+            catch (AssetServerException e)
+            {
+                m_log.ErrorFormat("[PRIM INVENTORY] Unable to update notecard: {0}", e);
+                remoteClient.SendAgentAlertMessage("Unable to update notecard asset. Try again later.", false);
+                return new UpdateItemResponse();
+            }
+
+            group.UpdateInventoryItemAsset(item.ParentPartID, item.ItemID, asset.FullID);
+            if (part != null)
+            {
+                part.GetProperties(remoteClient);
+            }
+
+            return new UpdateItemResponse(asset.FullID, AssetType.Notecard);
+        }
+
+        /// <summary>
+        /// <see>CapsUpdateTaskInventoryNotecardAsset(IClientAPI, UUID, UUID, byte[])</see>
+        /// </summary>
+        public UpdateItemResponse CapsUpdateTaskInventoryNotecardAsset(UUID avatarId, UUID itemId,
+            UUID primId, byte[] data)
+        {
+            ScenePresence avatar;
+
+            if (TryGetAvatar(avatarId, out avatar))
+            {
+                return CapsUpdateTaskInventoryNotecardAsset(
+                    avatar.ControllingClient, itemId, primId, data);
+            }
+            else
+            {
+                m_log.ErrorFormat(
+                    "[PRIM INVENTORY]: Avatar {0} cannot be found to update its prim notecard asset",
+                    avatarId);
+            }
+
+            return new UpdateItemResponse();
+        }
+
 
         bool ChangingInventoryItemPerms(InventoryItemBase itemOrig, InventoryItemBase itemUpd)
         {

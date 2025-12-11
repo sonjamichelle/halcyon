@@ -66,7 +66,8 @@ namespace OpenSim.Region.CoreModules.Capabilities
 
     public delegate UpdateItemResponse UpdateItem(UUID itemID, byte[] data);
 
-    public delegate UpdateItemResponse UpdateTaskScript(UUID itemID, UUID primID, bool isScriptRunning, byte[] data); 
+    public delegate UpdateItemResponse UpdateTaskScript(UUID itemID, UUID primID, bool isScriptRunning, byte[] data);
+    public delegate UpdateItemResponse UpdateTaskItem(UUID itemID, UUID primID, byte[] data);
 
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule")]
     public class InventoryCapsModule : INonSharedRegionModule
@@ -156,8 +157,9 @@ namespace OpenSim.Region.CoreModules.Capabilities
         {
             private static readonly string m_newInventory = "0002/";
             private static readonly string m_notecardUpdatePath = "0004/";
-            private static readonly string m_notecardTaskUpdatePath = "0005/";
-            private static readonly string m_fetchInventoryPath = "0006/";
+            private static readonly string m_scriptTaskUpdatePath = "0005/";
+            private static readonly string m_notecardTaskUpdatePath = "0006/";
+            private static readonly string m_fetchInventoryPath = "0007/";
 
             private UUID m_agentID;
             private Caps m_Caps;
@@ -195,9 +197,12 @@ namespace OpenSim.Region.CoreModules.Capabilities
                 {
                     IRequestHandler requestHandler;
 
-                    requestHandler = new RestStreamHandler("POST", m_Caps.CapsBase + m_notecardTaskUpdatePath, ScriptTaskInventory);
+                    requestHandler = new RestStreamHandler("POST", m_Caps.CapsBase + m_scriptTaskUpdatePath, ScriptTaskInventory);
                     m_Caps.RegisterHandler("UpdateScriptTaskInventory", requestHandler);
                     m_Caps.RegisterHandler("UpdateScriptTask", requestHandler);
+
+                    requestHandler = new RestStreamHandler("POST", m_Caps.CapsBase + m_notecardTaskUpdatePath, NoteCardTaskInventory);
+                    m_Caps.RegisterHandler("UpdateNotecardTaskInventory", requestHandler);
 
                     requestHandler = new RestStreamHandler("POST", m_Caps.CapsBase + m_notecardUpdatePath, NoteCardAgentInventory);
                     m_Caps.RegisterHandler("UpdateNotecardAgentInventory", requestHandler);
@@ -315,6 +320,14 @@ namespace OpenSim.Region.CoreModules.Capabilities
             }
 
             /// <summary>
+            /// Called when new asset data for a task notecard has been uploaded.
+            /// </summary>
+            public UpdateItemResponse TaskNotecardUpdated(UUID itemID, UUID primID, byte[] data)
+            {
+                return m_Scene.CapsUpdateTaskInventoryNotecardAsset(m_agentID, itemID, primID, data);
+            }
+
+            /// <summary>
             /// Called by the notecard update handler.  Provides a URL to which the client can upload a new asset.
             /// </summary>
             /// <param name="request"></param>
@@ -352,6 +365,54 @@ namespace OpenSim.Region.CoreModules.Capabilities
                 //                             LLSDHelpers.SerializeLLSDReply(uploadResponse)));
 
                 return LLSDHelpers.SerializeLLSDReply(uploadResponse);
+            }
+
+            /// <summary>
+            /// Called by the notecard task update handler. Provides a URL to which the client can upload a new asset.
+            /// </summary>
+            public string NoteCardTaskInventory(
+                string request, string path, string param, OSHttpRequest httpRequest, OSHttpResponse httpResponse)
+            {
+                m_log.Debug("[CAPS]: NoteCardTaskInventory Request in region: " + m_regionName);
+
+                try
+                {
+                    string capsBase = m_Caps.CapsBase;
+                    string uploaderPath = Util.RandomClass.Next(5000, 8000).ToString("0000");
+
+                    Hashtable hash = (Hashtable)LLSD.LLSDDeserialize(Utils.StringToBytes(request));
+                    UUID itemId = UUID.Zero;
+                    UUID taskId = UUID.Zero;
+
+                    if (hash.ContainsKey("item_id"))
+                        UUID.TryParse(hash["item_id"].ToString(), out itemId);
+                    if (hash.ContainsKey("task_id"))
+                        UUID.TryParse(hash["task_id"].ToString(), out taskId);
+
+                    TaskInventoryItemUpdater uploader =
+                        new TaskInventoryItemUpdater(
+                            itemId,
+                            taskId,
+                            capsBase + uploaderPath,
+                            m_httpServer);
+
+                    uploader.OnUpLoad += TaskNotecardUpdated;
+
+                    m_httpServer.AddStreamHandler(new BinaryStreamHandler("POST", capsBase + uploaderPath, uploader.uploaderCaps));
+
+                    string uploaderURL = m_httpServer.ServerURI + capsBase + uploaderPath;
+                    LLSDAssetUploadResponse uploadResponse = new LLSDAssetUploadResponse();
+                    uploadResponse.uploader = uploaderURL;
+                    uploadResponse.state = "upload";
+
+                    return LLSDHelpers.SerializeLLSDReply(uploadResponse);
+                }
+                catch (Exception e)
+                {
+                    m_log.ErrorFormat("[UPLOAD NOTECARD TASK HANDLER]: {0}{1}", e.Message, e.StackTrace);
+                }
+
+                return null;
             }
 
             /// <summary>
@@ -1355,11 +1416,11 @@ namespace OpenSim.Region.CoreModules.Capabilities
                         if (part != null)
                         {
                             TaskInventoryItem item = part.Inventory.GetInventoryItem(notecardID);
-                            if (m_Scene.Permissions.CanCopyObjectInventory(notecardID, objectID, m_Caps.AgentID))
-                            {
-                                notecardItem = new InventoryItemBase(notecardID, m_agentID) { AssetID = item.AssetID };
-                            }
-                        }
+                if (m_Scene.Permissions.CanCopyObjectInventory(notecardID, objectID, m_Caps.AgentID))
+                {
+                    notecardItem = new InventoryItemBase(notecardID, m_agentID) { AssetID = item.AssetID };
+                }
+            }
                     }
                     // else its in inventory directly
                     else
@@ -1665,6 +1726,61 @@ namespace OpenSim.Region.CoreModules.Capabilities
                 }
             }
 
+        }
+
+        /// <summary>
+        /// Callback invoked when a client sends asset data to a task inventory notecard update url.
+        /// </summary>
+        protected class TaskInventoryItemUpdater
+        {
+            public event UpdateTaskItem OnUpLoad;
+
+            private UpdateTaskItem handlerUpdateTaskItem = null;
+
+            private string uploaderPath = String.Empty;
+            private UUID inventoryItemID;
+            private UUID primID;
+            private IHttpServer httpListener;
+
+            public TaskInventoryItemUpdater(UUID inventoryItemID, UUID primID, string path, IHttpServer httpServer)
+            {
+                this.inventoryItemID = inventoryItemID;
+                this.primID = primID;
+                uploaderPath = path;
+                httpListener = httpServer;
+            }
+
+            public string uploaderCaps(byte[] data, string path, string param)
+            {
+                try
+                {
+                    string res = String.Empty;
+
+                    UpdateItemResponse response = new UpdateItemResponse();
+
+                    handlerUpdateTaskItem = OnUpLoad;
+                    if (handlerUpdateTaskItem != null)
+                    {
+                        response = handlerUpdateTaskItem(inventoryItemID, primID, data);
+                    }
+
+                    LLSDAssetUploadComplete uploadComplete = new LLSDAssetUploadComplete();
+                    uploadComplete.new_asset = response.AssetId.ToString();
+                    uploadComplete.new_inventory_item = inventoryItemID;
+                    uploadComplete.state = "complete";
+
+                    res = LLSDHelpers.SerializeLLSDReply(uploadComplete);
+
+                    httpListener.RemoveStreamHandler("POST", uploaderPath);
+                    return res;
+                }
+                catch (Exception e)
+                {
+                    m_log.Error("[CAPS]: " + e.ToString());
+                }
+
+                return null;
+            }
         }
 
         /// <summary>

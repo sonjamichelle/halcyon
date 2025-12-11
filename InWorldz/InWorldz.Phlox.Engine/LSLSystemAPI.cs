@@ -75,7 +75,7 @@ namespace InWorldz.Phlox.Engine
         private IClientAPI m_waitingForScriptAnswer = null; // we need to know more than if there's an outstanding request, also WHICH LLCV has an answer handler set.
         private bool m_automaticLinkPermission = false;
         private IMessageTransferModule m_TransferModule = null;
-        private int m_notecardLineReadCharsMax = 255;
+        private int m_notecardLineReadCharsMax = 1023;
         private IUrlModule m_UrlModule = null;
 
         private const int MAX_RESETS_PER_SECOND = 5;
@@ -130,7 +130,7 @@ namespace InWorldz.Phlox.Engine
             m_automaticLinkPermission =
                 m_ScriptEngine.Config.GetBoolean("AutomaticLinkPermission", false);
             m_notecardLineReadCharsMax =
-                m_ScriptEngine.Config.GetInt("NotecardLineReadCharsMax", 255);
+                m_ScriptEngine.Config.GetInt("NotecardLineReadCharsMax", 1023);
             if (m_notecardLineReadCharsMax > 65535)
                 m_notecardLineReadCharsMax = 65535;
 
@@ -18760,4 +18760,3 @@ namespace InWorldz.Phlox.Engine
  * 
  * Please reference the <a href="http://wiki.secondlife.com/wiki/LSL_Errors">SecondLife® Wiki's Errors listing</a> for the details on erros that may not be defined here.
  */
-
