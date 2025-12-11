@@ -11114,12 +11114,22 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 case "estatechangecovenantid":
                     if (((Scene)m_scene).Permissions.CanIssueEstateCommand(AgentId, false))
                     {
-                        foreach (EstateOwnerMessagePacket.ParamListBlock block in messagePacket.ParamList)
+                        UUID newCovenantID = UUID.Zero;
+                        uint newCovenantTimestamp = 0;
+
+                        if (messagePacket.ParamList.Length > 0)
+                            UUID.TryParse(Utils.BytesToString(messagePacket.ParamList[0].Parameter), out newCovenantID);
+
+                        if (messagePacket.ParamList.Length > 1)
                         {
-                            UUID newCovenantID = new UUID(Utils.BytesToString(block.Parameter));
-                            uint newCovenantTimestamp = Utils.BytesToUInt16(block.Parameter);
-                            OnEstateChangeCovenantRequest(this, newCovenantID, newCovenantTimestamp);
+                            uint.TryParse(Utils.BytesToString(messagePacket.ParamList[1].Parameter), out newCovenantTimestamp);
                         }
+                        else
+                        {
+                            newCovenantTimestamp = (uint)Util.UnixTimeSinceEpoch();
+                        }
+
+                        OnEstateChangeCovenantRequest(this, newCovenantID, newCovenantTimestamp);
                     }
                     return true;
                 case "estateaccessdelta": // Estate access delta manages the banlist and allow list too.
