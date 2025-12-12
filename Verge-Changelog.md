@@ -19,6 +19,11 @@
 - Seed caps now explicitly omit AISv3 caps (`InventoryAPIv3`, `LibraryAPIv3`) so Firestorm stays on legacy inventory APIs Halcyon supports, avoiding viewer attempts to use unsupported AIS v3 endpoints.
 - Added a manual inventory smoke checklist (`docs/inventory-smoke.md`) to validate Firestorm compatibility (folders/items populate, links resolve, notecards save, embedded items copy, post-restart consistency).
 
+## Linkset Data (behind flag)
+- Added config flag `EnableLinksetData` (Startup section, default false) to enable per-linkset key/value storage persisted with objects.
+- SceneObjectGroup now stores linkset data, serialized in XML2; deserialization preserves data.
+- Phlox implements `llLinksetDataRead/Write/Delete/Reset/Count/FindKeys` with permission checks (requires object modify rights); reads gated by the config flag.
+
 ## CI/Local Smoke
 - Added `scripts/local-smoke.ps1` to run a quick msbuild of `Halcyon.sln` (default Release) and fail fast on build errors.
 - Added `docs/ci-smoke.md` to describe the smoke scripts/checklists and how to run them locally.
@@ -32,6 +37,10 @@
 - `docs/inventory-smoke.md`
 - `scripts/local-smoke.ps1`
 - `docs/ci-smoke.md`
+- `OpenSim/Region/Framework/Scenes/Scene.cs`
+- `OpenSim/Region/Framework/Scenes/SceneObjectGroup.cs`
+- `OpenSim/Region/Framework/Scenes/Serialization/SceneObjectSerializer.cs`
+- `InWorldz/InWorldz.Phlox.Engine/LSLSystemAPI.cs`
 
 ## Validation (manual steps recommended)
 - Edit/save a notecard inside a prim (object inventory) and confirm it persists after closing/reopening and after region restart.

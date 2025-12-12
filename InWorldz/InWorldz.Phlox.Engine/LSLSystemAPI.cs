@@ -82,6 +82,9 @@ namespace InWorldz.Phlox.Engine
         private int m_resetSecond = 0;
         private int m_resetCount = 0;
         private DateTime m_resetWarned = DateTime.Now;
+        private const int LINKSETDATA_MAX_KEYS = 128;
+        private const int LINKSETDATA_MAX_KEY_LENGTH = 63;
+        private const int LINKSETDATA_MAX_VALUE_LENGTH = 2047;
 
         /// <summary>
         /// When a script is restored with state the listen handle it previously had
@@ -14512,6 +14515,17 @@ namespace InWorldz.Phlox.Engine
             ScriptShoutError("LSL Runtime Error: " + msg);
         }
 
+        private bool LinksetDataFeatureEnabled()
+        {
+            return World.LinksetDataEnabled;
+        }
+
+        private bool LinksetDataWriteAllowed()
+        {
+            return World.LinksetDataEnabled &&
+                World.Permissions.CanEditObject(m_host.ParentGroup.UUID, m_host.OwnerID, (uint)PermissionMask.Modify);
+        }
+
         public delegate void AssetRequestCallback(UUID assetID, AssetBase asset);
         private void WithNotecard(UUID assetID, AssetRequestCallback cb)
         {
@@ -18534,6 +18548,78 @@ namespace InWorldz.Phlox.Engine
         public void llResetAnimationOverride(string anim_state)
         {
             NotImplemented("llResetAnimationOverride - NOT IMPLEMENTED");
+        }
+
+        public string llLinksetDataRead(string key)
+        {
+            if (!LinksetDataFeatureEnabled())
+                return String.Empty;
+
+            string val = m_host.ParentGroup.GetLinksetData(key);
+            return val ?? String.Empty;
+        }
+
+        public int llLinksetDataWrite(string key, string value)
+        {
+            if (!LinksetDataWriteAllowed())
+            {
+                ScriptShoutError("llLinksetDataWrite: insufficient permissions");
+                return 0;
+            }
+
+            string error;
+            if (!m_host.ParentGroup.TrySetLinksetData(key, value, out error))
+            {
+                ScriptShoutError("llLinksetDataWrite failed: " + error);
+                return 0;
+            }
+
+            return 1;
+        }
+
+        public int llLinksetDataDelete(string key)
+        {
+            if (!LinksetDataWriteAllowed())
+            {
+                ScriptShoutError("llLinksetDataDelete: insufficient permissions");
+                return 0;
+            }
+
+            return m_host.ParentGroup.DeleteLinksetData(key) ? 1 : 0;
+        }
+
+        public void llLinksetDataReset()
+        {
+            if (!LinksetDataWriteAllowed())
+            {
+                ScriptShoutError("llLinksetDataReset: insufficient permissions");
+                return;
+            }
+
+            m_host.ParentGroup.ResetLinksetData();
+        }
+
+        public int llLinksetDataCount()
+        {
+            if (!LinksetDataFeatureEnabled())
+                return 0;
+
+            return m_host.ParentGroup.LinksetDataCount;
+        }
+
+        public LSL_List llLinksetDataFindKeys(string pattern, int start, int count)
+        {
+            LSL_List result = new LSL_List();
+            if (!LinksetDataFeatureEnabled())
+                return result;
+
+            IEnumerable<string> keys = m_host.ParentGroup.FindLinksetDataKeys(pattern, start, count);
+            foreach (string key in keys)
+            {
+                result.Add(key);
+            }
+
+            return result;
         }
     }
 

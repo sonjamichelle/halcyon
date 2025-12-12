@@ -288,6 +288,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
                 // Script state may, or may not, exist. Not having any, is NOT
                 // ever a problem.
 
+                sceneObject.LoadLinksetData(doc.DocumentElement);
                 sceneObject.LoadScriptState(doc);
                 //m_log.DebugFormat("[SERIALIZER]: Finished deserialization of SOG {0}, {1}ms", Name, System.Environment.TickCount - time);
                 return sceneObject;
@@ -353,6 +354,7 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             writer.WriteEndElement(); // End of OtherParts
             if (saveScriptState)
             {
+                sceneObject.WriteLinksetData(writer);
                 sceneObject.SaveScriptedState(writer, stopScriptReason);
             }
             writer.WriteEndElement(); // End of SceneObjectGroup

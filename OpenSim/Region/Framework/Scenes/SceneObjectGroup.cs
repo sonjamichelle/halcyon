@@ -196,6 +196,11 @@ namespace OpenSim.Region.Framework.Scenes
 
         private ILandObject _currentParcel;
 
+        private readonly Dictionary<string, string> _linksetData = new Dictionary<string, string>();
+        private const int LINKSETDATA_MAX_KEYS = 128;
+        private const int LINKSETDATA_MAX_KEY_LENGTH = 63;
+        private const int LINKSETDATA_MAX_VALUE_LENGTH = 2047;
+
         #region Properties
 
         /// <summary>
@@ -230,6 +235,140 @@ namespace OpenSim.Region.Framework.Scenes
         {
             return Interlocked.Decrement(ref m_avatarsToExpect);
         }
+
+        #region LinksetData
+
+        public bool HasLinksetData
+        {
+            get { return _linksetData.Count > 0; }
+        }
+
+        public int LinksetDataCount
+        {
+            get { return _linksetData.Count; }
+        }
+
+        public string GetLinksetData(string key)
+        {
+            string value;
+            if (_linksetData.TryGetValue(key, out value))
+                return value;
+            return null;
+        }
+
+        public bool DeleteLinksetData(string key)
+        {
+            bool removed = _linksetData.Remove(key);
+            if (removed)
+                HasGroupChanged = true;
+            return removed;
+        }
+
+        public void ResetLinksetData()
+        {
+            if (_linksetData.Count > 0)
+            {
+                _linksetData.Clear();
+                HasGroupChanged = true;
+            }
+        }
+
+        public bool TrySetLinksetData(string key, string value, out string error)
+        {
+            error = null;
+
+            if (key == null || value == null)
+            {
+                error = "key_or_value_null";
+                return false;
+            }
+
+            if (key.Length == 0 || key.Length > LINKSETDATA_MAX_KEY_LENGTH)
+            {
+                error = "key_length";
+                return false;
+            }
+
+            if (value.Length > LINKSETDATA_MAX_VALUE_LENGTH)
+            {
+                error = "value_length";
+                return false;
+            }
+
+            if (!_linksetData.ContainsKey(key) && _linksetData.Count >= LINKSETDATA_MAX_KEYS)
+            {
+                error = "too_many_keys";
+                return false;
+            }
+
+            _linksetData[key] = value;
+            HasGroupChanged = true;
+            return true;
+        }
+
+        public IEnumerable<string> FindLinksetDataKeys(string pattern, int start, int count)
+        {
+            IEnumerable<string> keys = _linksetData.Keys;
+            if (!String.IsNullOrEmpty(pattern))
+            {
+                keys = keys.Where(k => k.Contains(pattern));
+            }
+
+            if (start < 0)
+                start = 0;
+            if (count < 0)
+                count = 0;
+
+            return keys.Skip(start).Take(count);
+        }
+
+        public void WriteLinksetData(XmlTextWriter writer)
+        {
+            if (_linksetData.Count == 0)
+                return;
+
+            writer.WriteStartElement(String.Empty, "LinksetData", String.Empty);
+            foreach (var kvp in _linksetData)
+            {
+                writer.WriteStartElement(String.Empty, "Entry", String.Empty);
+                writer.WriteAttributeString("key", kvp.Key);
+                writer.WriteString(kvp.Value);
+                writer.WriteEndElement();
+            }
+            writer.WriteEndElement();
+        }
+
+        public void LoadLinksetData(XmlNode sogNode)
+        {
+            _linksetData.Clear();
+            if (sogNode == null)
+                return;
+
+            XmlNode linksetDataNode = sogNode.SelectSingleNode("//LinksetData");
+            if (linksetDataNode == null)
+                return;
+
+            foreach (XmlNode entry in linksetDataNode.ChildNodes)
+            {
+                if (entry.Name != "Entry")
+                    continue;
+
+                XmlAttribute keyAttr = entry.Attributes["key"];
+                if (keyAttr == null)
+                    continue;
+
+                string key = keyAttr.Value;
+                string value = entry.InnerText ?? String.Empty;
+                string error;
+                if (!TrySetLinksetData(key, value, out error))
+                {
+                    // Ignore invalid entries silently; serialized content may exceed limits in config-off cases.
+                    continue;
+                }
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Is this group on it's way to another sim?

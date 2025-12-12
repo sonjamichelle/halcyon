@@ -206,6 +206,8 @@ namespace OpenSim.Region.Framework.Scenes
         protected StorageManager m_storageManager;
         public CommunicationsManager CommsManager;
 
+        private bool m_linksetDataEnabled = false;
+
         protected SceneCommunicationService m_sceneGridService;
 
         public SceneCommunicationService SceneGridService
@@ -244,6 +246,10 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_interregionCommsOut; }
         }
 
+        public bool LinksetDataEnabled
+        {
+            get { return m_linksetDataEnabled; }
+        }
 
         protected IInterregionCommsIn m_interregionCommsIn;
         protected IDialogModule m_dialogModule;
@@ -496,6 +502,8 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if (RegionInfo.PhysPrimMax > 0)
                     m_maxPhys = RegionInfo.PhysPrimMax;
+
+                m_linksetDataEnabled = startupConfig.GetBoolean("EnableLinksetData", false);
 
                 // Here, if clamping is requested in either global or
                 // local config, it will be used
