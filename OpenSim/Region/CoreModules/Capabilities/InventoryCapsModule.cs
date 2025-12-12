@@ -1099,6 +1099,10 @@ namespace OpenSim.Region.CoreModules.Capabilities
                     contents["agent_id"] = folder.Owner;
                     contents["owner_id"] = folder.Owner;
                     contents["folder_id"] = folder.ID;
+                    contents["parent_id"] = folder.ParentID;
+                    contents["name"] = folder.Name;
+                    contents["type"] = folder.Type;
+                    contents["preferred_type"] = folder.Type;
 
                     contents.WriteKey("items"); //Start array items
                     contents.WriteStartArray("items");
