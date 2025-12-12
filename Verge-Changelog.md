@@ -13,6 +13,7 @@
 
 ## Inventory Compatibility (Firestorm)
 - Always serialize `asset_id` for inventory items (including objects) and include `linked_id` for link/link-folder items to match newer Firestorm inventory expectations and avoid items being treated as broken/removed on fetch.
+- This addresses inventory loss seen with newer Firestorm builds when connecting to Halcyon (inventory fetch/serialization mismatch).
 
 ## Files Touched
 - `OpenSim/Region/CoreModules/Capabilities/InventoryCapsModule.cs`
