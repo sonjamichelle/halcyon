@@ -304,6 +304,8 @@ namespace OpenSim
                     = startupConfig.GetString("AssetCache", "OpenSim.Framework.Communications.Cache.AssetCache");
                 m_configSettings.ClientstackDll 
                     = startupConfig.GetString("clientstack_plugin", "OpenSim.Region.ClientStack.LindenUDP.dll");
+                m_configSettings.EnableHypergrid =
+                    startupConfig.GetBoolean("EnableHypergrid", false);
             }
 
             IConfig standaloneConfig = m_config.Source.Configs["StandAlone"];

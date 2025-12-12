@@ -26,6 +26,7 @@
 
 ## Hypergrid Restore (work plan)
 - Added planning doc `docs/Hypergrid-Restore.md` outlining steps to re-enable HG behind a config gate (default off), components to port from OpenSim 0.9.3.0, and test matrix.
+- Added `EnableHypergrid` config flag (Startup, default false) and surfaced it on Scene for future HG module gating.
 
 ## Linkset Data (behind flag)
 - Added config flag `EnableLinksetData` (Startup section, default false) to enable per-linkset key/value storage persisted with objects.

@@ -107,6 +107,13 @@ namespace OpenSim.Framework
             set { m_standaloneWelcomeMessage = value; }
         }
 
+        private bool m_enableHypergrid = false;
+        public bool EnableHypergrid
+        {
+            get { return m_enableHypergrid; }
+            set { m_enableHypergrid = value; }
+        }
+
         private string m_standaloneInventoryPlugin;
 
         public string StandaloneInventoryPlugin

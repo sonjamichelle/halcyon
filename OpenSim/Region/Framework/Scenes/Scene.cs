@@ -188,6 +188,7 @@ namespace OpenSim.Region.Framework.Scenes
         public float m_maxPhys = 10;
         public bool m_clampPrimSize = false;
         public bool m_allowScriptCrossings = false;
+        private bool m_hypergridEnabled = false;
         public bool m_useFlySlow = false;
         public bool m_usePreJump = false;
         public bool m_seeIntoRegionFromNeighbor;
@@ -373,6 +374,11 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_defaultScriptEngine; }
         }
 
+        public bool HypergridEnabled
+        {
+            get { return m_hypergridEnabled; }
+        }
+
         // Reference to all of the agents in the scene (root and child)
         protected Dictionary<UUID, ScenePresence> m_scenePresences
         {
@@ -521,6 +527,7 @@ namespace OpenSim.Region.Framework.Scenes
                 m_persistAfter *= 10000000;
 
                 m_defaultScriptEngine = startupConfig.GetString("DefaultScriptEngine", "InWorldz.Phlox");
+                m_hypergridEnabled = startupConfig.GetBoolean("EnableHypergrid", false);
                 
                 IConfig packetConfig = m_config.Configs["PacketPool"];
                 if (packetConfig != null)
