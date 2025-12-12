@@ -1,278 +1,314 @@
 /*
- * Copyright (c) InWorldz Halcyon Developers
- * Copyright (c) Contributors, http://opensimulator.org/
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the OpenSim Project nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS ``AS IS'' AND ANY
- * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE CONTRIBUTORS BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Ported from OpenSimulator Inventory Archiver to Halcyon.
  */
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using log4net;
+using Mono.Addins;
+using NDesk.Options;
 using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
-using OpenSim.Framework.Communications;
-using OpenSim.Framework.Communications.Cache;
+using OpenSim.Framework.Console;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
+using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
-{          
-    /// <summary>
-    /// This module loads and saves OpenSimulator inventory archives
-    /// </summary>    
-    public class InventoryArchiverModule : IRegionModule, IInventoryArchiverModule
-    {    
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        
-        public string Name { get { return "Inventory Archiver Module"; } }
-        
-        public bool IsSharedModule { get { return true; } }
-        
-        public event InventoryArchiveSaved OnInventoryArchiveSaved;        
-        
-        /// <summary>
-        /// The file to load and save inventory if no filename has been specified
-        /// </summary>
-        protected const string DEFAULT_INV_BACKUP_FILENAME = "user-inventory_iar.tar.gz";               
-        
-        /// <value>
-        /// All scenes that this module knows about
-        /// </value>
-        private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
-        
-        /// <value>
-        /// The comms manager we will use for all comms requests
-        /// </value>
-        protected internal CommunicationsManager CommsManager;
+{
+    [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "InventoryArchiverModule")]
+    public class InventoryArchiverModule : ISharedRegionModule, IInventoryArchiverModule
+    {
+        private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public void Initialize(Scene scene, IConfigSource source)
-        {            
+        public event InventoryArchiveSaved OnInventoryArchiveSaved;
+        public event InventoryArchiveLoaded OnInventoryArchiveLoaded;
+
+        protected const string DEFAULT_INV_BACKUP_FILENAME = "user-inventory.iar";
+
+        protected List<UUID> m_pendingConsoleTasks = new List<UUID>();
+        private Dictionary<UUID, Scene> m_scenes = new Dictionary<UUID, Scene>();
+        private Scene m_aScene;
+        private IUserAccountService m_UserAccountService;
+
+        public void Initialise(IConfigSource source) { }
+
+        public void AddRegion(Scene scene)
+        {
             if (m_scenes.Count == 0)
             {
                 scene.RegisterModuleInterface<IInventoryArchiverModule>(this);
-                CommsManager = scene.CommsManager;
                 OnInventoryArchiveSaved += SaveInvConsoleCommandCompleted;
-                
-                scene.AddCommand(
-                    this, "load iar",
-                    "load iar <first> <last> <inventory path> [<archive path>]",
-                    "Load user inventory archive.  EXPERIMENTAL, PLEASE DO NOT USE YET", HandleLoadInvConsoleCommand); 
-                
-                scene.AddCommand(
-                    this, "save iar",
-                    "save iar <first> <last> <inventory path> [<archive path>]",
-                    "Save user inventory archive.  EXPERIMENTAL, PLEASE DO NOT USE YET", HandleSaveInvConsoleCommand);           
-            }
-                        
-            m_scenes[scene.RegionInfo.RegionID] = scene;            
-        }
-        
-        public void PostInitialize() {}
+                OnInventoryArchiveLoaded += LoadInvConsoleCommandCompleted;
 
-        public void Close() {}
-        
-        /// <summary>
-        /// Trigger the inventory archive saved event.
-        /// </summary>
+                scene.AddCommand(
+                    "Archiving", this, "load iar",
+                    "load iar [-m|--merge] <first> <last> <inventory path> <password> [<IAR path>]",
+                    "Load user inventory archive (IAR).",
+                    "-m|--merge merges into existing folders where possible."
+                    + "<first> user's first name.\n"
+                    + "<last> user's last name.\n"
+                    + "<inventory path> target path inside the user's inventory.\n"
+                    + "<password> user's password.\n"
+                    + "<IAR path> filesystem path or URI; defaults to user-inventory.iar in current directory.",
+                    HandleLoadInvConsoleCommand);
+
+                scene.AddCommand(
+                    "Archiving", this, "save iar",
+                    "save iar [-h|--home=<url>] [--noassets | --skipbadassets] [--perm=<CTM>] <first> <last> <inventory path> <password> [<IAR path>]",
+                    "Save user inventory archive (IAR).",
+                    "<first> user's first name.\n"
+                    + "<last> user's last name.\n"
+                    + "<inventory path> path inside the user's inventory for folder/item to save.\n"
+                    + "<IAR path> filesystem path to save; defaults to user-inventory.iar in current directory.\n"
+                    + "-h|--home=<url> adds profile service URL to saved info.\n"
+                    + "--noassets skips saving assets.\n"
+                    + "--skipbadassets skips items with missing main assets.\n"
+                    + "--perm=<CTM> require perms (Copy/Transfer/Modify) to include item.",
+                    HandleSaveInvConsoleCommand);
+
+                m_aScene = scene;
+            }
+
+            m_scenes[scene.RegionInfo.RegionID] = scene;
+        }
+
+        public void RemoveRegion(Scene scene) { }
+        public void Close() { }
+        public void RegionLoaded(Scene scene) { }
+        public void PostInitialise() { }
+        public Type ReplaceableInterface { get { return null; } }
+        public string Name { get { return "Inventory Archiver Module"; } }
+
+        protected IUserAccountService UserAccountService
+        {
+            get
+            {
+                if (m_UserAccountService == null)
+                {
+                    foreach (Scene s in m_scenes.Values)
+                    {
+                        m_UserAccountService = s.RequestModuleInterface<IUserAccountService>();
+                        if (m_UserAccountService != null)
+                            break;
+                    }
+                }
+                return m_UserAccountService;
+            }
+        }
+
         protected internal void TriggerInventoryArchiveSaved(
-            bool succeeded, CachedUserInfo userInfo, string invPath, Stream saveStream, Exception reportedException)
+            UUID id, bool succeeded, UserAccount userInfo, string invPath, Stream saveStream,
+            Exception reportedException, int saveCount, int filteredCount)
         {
-            InventoryArchiveSaved handlerInventoryArchiveSaved = OnInventoryArchiveSaved;
-            if (handlerInventoryArchiveSaved != null)
-                handlerInventoryArchiveSaved(succeeded, userInfo, invPath, saveStream, reportedException);
+            var handler = OnInventoryArchiveSaved;
+            if (handler != null)
+                handler(id, succeeded, userInfo, invPath, saveStream, reportedException, saveCount, filteredCount);
         }
-               
-        public void DearchiveInventory(string firstName, string lastName, string invPath, Stream loadStream)
-        {
-            if (m_scenes.Count > 0)
-            {            
-                CachedUserInfo userInfo = GetUserInfo(firstName, lastName);
-                        
-                if (userInfo != null)
-                {
-                    InventoryArchiveReadRequest request = 
-                        new InventoryArchiveReadRequest(userInfo, invPath, loadStream, CommsManager);                
-                    UpdateClientWithLoadedNodes(userInfo, request.Execute());
-                }
-            }            
-        }        
 
-        public void ArchiveInventory(string firstName, string lastName, string invPath, Stream saveStream)
+        protected internal void TriggerInventoryArchiveLoaded(
+            UUID id, bool succeeded, UserAccount userInfo, string invPath, Stream loadStream,
+            Exception reportedException, int loadCount)
         {
-            if (m_scenes.Count > 0)
-            {
-                CachedUserInfo userInfo = GetUserInfo(firstName, lastName);
+            var handler = OnInventoryArchiveLoaded;
+            if (handler != null)
+                handler(id, succeeded, userInfo, invPath, loadStream, reportedException, loadCount);
+        }
 
-                if (userInfo != null)
-                    new InventoryArchiveWriteRequest(this, userInfo, invPath, saveStream).Execute();
-            }              
+        public bool ArchiveInventory(
+            UUID id, string firstName, string lastName, string invPath, string pass, Stream saveStream)
+        {
+            return ArchiveInventory(id, firstName, lastName, invPath, pass, saveStream, new Dictionary<string, object>());
         }
-        
-        public void DearchiveInventory(string firstName, string lastName, string invPath, string loadPath)
+
+        public bool ArchiveInventory(
+            UUID id, string firstName, string lastName, string invPath, string pass, Stream saveStream,
+            Dictionary<string, object> options)
         {
-            if (m_scenes.Count > 0)
-            {   
-                CachedUserInfo userInfo = GetUserInfo(firstName, lastName);
-                
-                if (userInfo != null)
-                {
-                    InventoryArchiveReadRequest request = 
-                        new InventoryArchiveReadRequest(userInfo, invPath, loadPath, CommsManager);                
-                    UpdateClientWithLoadedNodes(userInfo, request.Execute());
-                }
-            }                
-        }
-                
-        public void ArchiveInventory(string firstName, string lastName, string invPath, string savePath)
-        {
-            if (m_scenes.Count > 0)
+            if (m_scenes.Count == 0)
+                return false;
+
+            UserAccount userInfo = GetUserInfo(firstName, lastName, pass);
+            if (userInfo == null)
+                return false;
+
+            try
             {
-                CachedUserInfo userInfo = GetUserInfo(firstName, lastName);
-                
-                if (userInfo != null)
-                    new InventoryArchiveWriteRequest(this, userInfo, invPath, savePath).Execute();
-            }            
-        }                
-        
-        /// <summary>
-        /// Load inventory from an inventory file archive
-        /// </summary>
-        /// <param name="cmdparams"></param>
-        protected void HandleLoadInvConsoleCommand(string module, string[] cmdparams)
-        {
-            if (cmdparams.Length < 5)
+                InventoryArchiveWriteRequest iarReq = new InventoryArchiveWriteRequest(id, this, m_aScene, userInfo, invPath, saveStream);
+                iarReq.Execute(options, UserAccountService);
+            }
+            catch (EntryPointNotFoundException e)
             {
-                m_log.Error(
-                    "[INVENTORY ARCHIVER]: usage is load iar <first name> <last name> <inventory path> [<load file path>]");
-                return;
+                m_log.Error("[INVENTORY ARCHIVER]: zlib/mono mismatch when creating compression stream", e);
+                return false;
             }
 
-            string firstName = cmdparams[2];
-            string lastName = cmdparams[3];
-            string invPath = cmdparams[4];
-            string loadPath = (cmdparams.Length > 5 ? cmdparams[5] : DEFAULT_INV_BACKUP_FILENAME);
-
-            m_log.InfoFormat(
-                "[INVENTORY ARCHIVER]: Loading archive {0} to inventory path {1} for {2} {3}",
-                loadPath, invPath, firstName, lastName);
-            
-            DearchiveInventory(firstName, lastName, invPath, loadPath);
-            
-            m_log.InfoFormat(
-                "[INVENTORY ARCHIVER]: Loaded archive {0} for {1} {2}",
-                loadPath, firstName, lastName);
+            return true;
         }
-        
-        /// <summary>
-        /// Save inventory to a file archive
-        /// </summary>
-        /// <param name="cmdparams"></param>
-        protected void HandleSaveInvConsoleCommand(string module, string[] cmdparams)
+
+        public void ArchiveInventory(UUID id, string firstName, string lastName, string invPath, string savePath)
         {
-            if (cmdparams.Length < 5)
-            {
-                m_log.Error(
-                    "[INVENTORY ARCHIVER]: usage is save iar <first name> <last name> <inventory path> [<save file path>]");
-                return;
-            }
-
-            string firstName = cmdparams[2];
-            string lastName = cmdparams[3];
-            string invPath = cmdparams[4];
-            string savePath = (cmdparams.Length > 5 ? cmdparams[5] : DEFAULT_INV_BACKUP_FILENAME);
-
-            m_log.InfoFormat(
-                "[INVENTORY ARCHIVER]: Saving archive {0} from inventory path {1} for {2} {3}",
-                savePath, invPath, firstName, lastName);
-            
-            ArchiveInventory(firstName, lastName, invPath, savePath);                      
+            FileStream fs = new FileStream(savePath, FileMode.Create);
+            ArchiveInventory(id, firstName, lastName, invPath, "notused", fs);
+            fs.Close();
         }
-        
-        private void SaveInvConsoleCommandCompleted(
-            bool succeeded, CachedUserInfo userInfo, string invPath, Stream saveStream, Exception reportedException)
+
+        public bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, Stream loadStream, bool merge)
         {
-            if (succeeded)
+            if (m_scenes.Count == 0)
+                return false;
+
+            UserAccount userInfo = GetUserInfo(firstName, lastName, pass);
+            if (userInfo == null)
+                return false;
+
+            InventoryArchiveReadRequest request =
+                new InventoryArchiveReadRequest(id, this, m_aScene.InventoryService, m_aScene.AssetService, UserAccountService, userInfo, invPath, loadStream, merge);
+            request.Execute();
+            return true;
+        }
+
+        public bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, string loadPath, bool merge)
+        {
+            using (StreamReader reader = new StreamReader(loadPath))
             {
-                m_log.InfoFormat("[INVENTORY ARCHIVER]: Saved archive for {0}", userInfo.UserProfile.Name);
-            }
-            else
-            {
-                m_log.ErrorFormat(
-                    "[INVENTORY ARCHIVER]: Archive save for {0} failed - {1}", 
-                    userInfo.UserProfile.Name, reportedException.Message);
+                return DearchiveInventory(id, firstName, lastName, invPath, pass, reader.BaseStream, merge);
             }
         }
-        
-        /// <summary>
-        /// Get user information for the given name.
-        /// </summary>
-        /// <param name="firstName"></param>
-        /// <param name="lastName"></param>
-        /// <returns></returns>
-        protected CachedUserInfo GetUserInfo(string firstName, string lastName)
+
+        private UserAccount GetUserInfo(string firstName, string lastName, string pass)
         {
-            CachedUserInfo userInfo = CommsManager.UserService.GetUserDetails(firstName, lastName);
-            if (null == userInfo)
+            if (UserAccountService == null)
             {
-                m_log.ErrorFormat(
-                    "[INVENTORY ARCHIVER]: Failed to find user info for {0} {1}", 
-                    firstName, lastName);
+                m_log.Error("[INVENTORY ARCHIVER]: No user account service");
                 return null;
             }
-            
-            return userInfo;
-        }
-        
-        /// <summary>
-        /// Notify the client of loaded nodes if they are logged in
-        /// </summary>
-        /// <param name="loadedNodes">Can be empty.  In which case, nothing happens</param>
-        private void UpdateClientWithLoadedNodes(CachedUserInfo userInfo, List<InventoryNodeBase> loadedNodes)
-        {               
-            if (loadedNodes.Count == 0)
-                return;
-                   
-            foreach (Scene scene in m_scenes.Values)
+
+            UserAccount user = UserAccountService.GetUserAccount(m_aScene.RegionInfo.ScopeID, firstName, lastName);
+            if (user == null)
             {
-                ScenePresence user = scene.GetScenePresence(userInfo.UserProfile.ID);
-                
-                if (user != null && !user.IsChildAgent)
-                {        
-                    foreach (InventoryNodeBase node in loadedNodes)
-                    {
-                        m_log.DebugFormat(
-                            "[INVENTORY ARCHIVER]: Notifying {0} of loaded inventory node {1}", 
-                            user.Name, node.Name);
-                        
-                        user.ControllingClient.SendBulkUpdateInventory(node);
-                    }
-                    
-                    break;
-                }        
-            }            
+                m_log.ErrorFormat("[INVENTORY ARCHIVER]: failed to find user {0} {1}", firstName, lastName);
+                return null;
+            }
+
+            if (!m_aScene.AuthenticateUser(user.PrincipalID, pass, 30))
+            {
+                m_log.Error("[INVENTORY ARCHIVER]: authentication failed");
+                return null;
+            }
+
+            return user;
         }
+
+        #region Console handlers
+
+        protected void HandleSaveInvConsoleCommand(string module, string[] args)
+        {
+            // save iar [-h|--home=<url>] [--noassets | --skipbadassets] [--perm=<CTM>] <first> <last> <inventory path> <password> [<IAR path>]
+            if (args.Length < 6)
+            {
+                m_log.Error("Usage: save iar [-h|--home=<url>] [--noassets | --skipbadassets] [--perm=<CTM>] <first> <last> <inventory path> <password> [<IAR path>]");
+                return;
+            }
+
+            string first = String.Empty, last = String.Empty, invPath = String.Empty, pass = String.Empty, iarPath = DEFAULT_INV_BACKUP_FILENAME;
+            bool skipAssets = false;
+            bool skipBad = false;
+            string perm = null;
+            OptionSet opts = new OptionSet()
+                .Add("h|home=", v => { /* ignored */ })
+                .Add("noassets", v => skipAssets = true)
+                .Add("skipbadassets", v => skipBad = true)
+                .Add("perm=", v => perm = v);
+
+            List<string> extra = opts.Parse(new List<string>(args).GetRange(2, args.Length - 2));
+            if (extra.Count < 4)
+            {
+                m_log.Error("Usage: save iar ... <first> <last> <inventory path> <password> [<IAR path>]");
+                return;
+            }
+
+            first = extra[0];
+            last = extra[1];
+            invPath = extra[2];
+            pass = extra[3];
+            if (extra.Count > 4)
+                iarPath = extra[4];
+
+            UUID id = UUID.Random();
+            m_pendingConsoleTasks.Add(id);
+            FileStream fs = new FileStream(iarPath, FileMode.Create);
+
+            ArchiveInventory(id, first, last, invPath, pass, fs, new Dictionary<string, object>
+            {
+                { "perm", perm },
+                { "skipassets", skipAssets },
+                { "skipbadassets", skipBad }
+            });
+        }
+
+        protected void HandleLoadInvConsoleCommand(string module, string[] args)
+        {
+            // load iar [-m|--merge] <first> <last> <inventory path> <password> [<IAR path>]
+            if (args.Length < 6)
+            {
+                m_log.Error("Usage: load iar [-m|--merge] <first> <last> <inventory path> <password> [<IAR path>]");
+                return;
+            }
+
+            bool merge = false;
+            OptionSet opts = new OptionSet()
+                .Add("m|merge", v => merge = true);
+
+            List<string> extra = opts.Parse(new List<string>(args).GetRange(2, args.Length - 2));
+            if (extra.Count < 4)
+            {
+                m_log.Error("Usage: load iar [-m|--merge] <first> <last> <inventory path> <password> [<IAR path>]");
+                return;
+            }
+
+            string first = extra[0];
+            string last = extra[1];
+            string invPath = extra[2];
+            string pass = extra[3];
+            string iarPath = DEFAULT_INV_BACKUP_FILENAME;
+            if (extra.Count > 4)
+                iarPath = extra[4];
+
+            UUID id = UUID.Random();
+            m_pendingConsoleTasks.Add(id);
+            using (FileStream fs = new FileStream(iarPath, FileMode.Open))
+            {
+                DearchiveInventory(id, first, last, invPath, pass, fs, merge);
+            }
+        }
+
+        private void SaveInvConsoleCommandCompleted(UUID id, bool succeeded, UserAccount userInfo, string invPath, object saveStream, Exception reportedException, int saveCount, int filteredCount)
+        {
+            if (m_pendingConsoleTasks.Contains(id))
+            {
+                m_pendingConsoleTasks.Remove(id);
+                if (!succeeded)
+                    m_log.ErrorFormat("[INVENTORY ARCHIVER]: failed to save iar for {0} at {1}: {2}", userInfo.Name, invPath, reportedException);
+                else
+                    m_log.InfoFormat("[INVENTORY ARCHIVER]: saved iar for {0} at {1}. Items saved: {2}, filtered: {3}", userInfo.Name, invPath, saveCount, filteredCount);
+            }
+        }
+
+        private void LoadInvConsoleCommandCompleted(UUID id, bool succeeded, UserAccount userInfo, string invPath, object loadStream, Exception reportedException, int loadCount)
+        {
+            if (m_pendingConsoleTasks.Contains(id))
+            {
+                m_pendingConsoleTasks.Remove(id);
+                if (!succeeded)
+                    m_log.ErrorFormat("[INVENTORY ARCHIVER]: failed to load iar for {0} at {1}: {2}", userInfo.Name, invPath, reportedException);
+                else
+                    m_log.InfoFormat("[INVENTORY ARCHIVER]: loaded iar for {0} at {1}. Items restored: {2}", userInfo.Name, invPath, loadCount);
+            }
+        }
+
+        #endregion
     }
 }
