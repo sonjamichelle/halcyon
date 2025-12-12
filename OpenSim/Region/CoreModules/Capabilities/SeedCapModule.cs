@@ -136,6 +136,10 @@ namespace OpenSim.Region.CoreModules.Capabilities
 
                 Hashtable capsDetails = m_Caps.CapsHandlers.GetCapsDetails(true);
 
+                // Explicitly omit AISv3 capabilities so newer viewers (e.g. Firestorm) stay on v2 inventory APIs.
+                capsDetails.Remove("InventoryAPIv3");
+                capsDetails.Remove("LibraryAPIv3");
+
                 string result = LLSDHelpers.SerializeLLSDReply(capsDetails);
 
                 // m_log.DebugFormat("[CAPS] CapsRequest {0}", result);

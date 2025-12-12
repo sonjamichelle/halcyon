@@ -16,6 +16,7 @@
 - This addresses inventory loss seen with newer Firestorm builds when connecting to Halcyon (inventory fetch/serialization mismatch).
 - Inventory folder fetch (`FetchInventoryDescendents2`) now includes `parent_id`, `name`, `type`, and `preferred_type` in the top-level folder map so viewers receive complete folder metadata.
 - Overall: fetch responses now carry the key fields Firestorm expects for folders and items to prevent client-side pruning or “broken” entries during login/background fetch.
+- Seed caps now explicitly omit AISv3 caps (`InventoryAPIv3`, `LibraryAPIv3`) so Firestorm stays on legacy inventory APIs Halcyon supports.
 
 ## Files Touched
 - `OpenSim/Region/CoreModules/Capabilities/InventoryCapsModule.cs`
