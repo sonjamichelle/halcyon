@@ -24,6 +24,9 @@
 - Linkset data is serialized in XML2 and round-trips through IARs.
 - Usage and options documented in `docs/iar-notes.md` and `docs/Verge-IAR-Support.md` (perm filters, noassets/skipbadassets, merge loads, smoke steps).
 
+## Hypergrid Restore (work plan)
+- Added planning doc `docs/Hypergrid-Restore.md` outlining steps to re-enable HG behind a config gate (default off), components to port from OpenSim 0.9.3.0, and test matrix.
+
 ## Linkset Data (behind flag)
 - Added config flag `EnableLinksetData` (Startup section, default false) to enable per-linkset key/value storage persisted with objects.
 - SceneObjectGroup now stores linkset data, serialized in XML2; deserialization preserves data.
@@ -50,6 +53,7 @@
 - `OpenSim/Region/CoreModules/Avatar/Inventory/Archiver/*`
 - `docs/iar-notes.md`
 - `docs/Verge-IAR-Support.md`
+- `docs/Hypergrid-Restore.md`
 
 ## Validation (manual steps recommended)
 - Edit/save a notecard inside a prim (object inventory) and confirm it persists after closing/reopening and after region restart.
