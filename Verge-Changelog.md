@@ -11,11 +11,15 @@
 - Fixed estate covenant change handling: the viewer sends UUID and timestamp in separate params, but server parsed each param as both fields, causing the final param (timestamp) to overwrite the covenant with UUID.Zero. Now we parse once (param[0]=UUID, param[1]=timestamp or current time fallback) and fire a single update, so covenant IDs persist across reopen/restart.
 - Covenant asset retrieval is permitted via `LLTST_SIM_ESTATE`; with the corrected UUID persistence, existing covenant notecard assets remain referenced properly.
 
+## Inventory Compatibility (Firestorm)
+- Always serialize `asset_id` for inventory items (including objects) and include `linked_id` for link/link-folder items to match newer Firestorm inventory expectations and avoid items being treated as broken/removed on fetch.
+
 ## Files Touched
 - `OpenSim/Region/CoreModules/Capabilities/InventoryCapsModule.cs`
 - `OpenSim/Region/Framework/Scenes/Scene.Inventory.cs`
 - `InWorldz/InWorldz.Phlox.Engine/LSLSystemAPI.cs`
 - `OpenSim/Region/ClientStack/LindenUDP/LLClientView.cs`
+- `OpenSim/Framework/InventoryItemBase.cs`
 
 ## Validation (manual steps recommended)
 - Edit/save a notecard inside a prim (object inventory) and confirm it persists after closing/reopening and after region restart.

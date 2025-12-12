@@ -449,9 +449,13 @@ namespace OpenSim.Framework
             contents.WriteStartMap("item"); //Start item kvp
             //UUID assetID = UUID.Parse(retVal["assetID"].ToString());
 
-            if (this.AssetType != (int)OpenMetaverse.AssetType.Object)
+            // Always include asset_id; some viewers (e.g. newer Firestorm) treat missing asset_ids as broken items.
+            contents["asset_id"] = this.AssetID;
+            // Provide linked_id for link and link-folder items so viewers don't lose the reference target.
+            if (this.AssetType == (int)OpenMetaverse.AssetType.Link ||
+                this.AssetType == (int)OpenMetaverse.AssetType.LinkFolder)
             {
-                contents["asset_id"] = this.AssetID;
+                contents["linked_id"] = this.AssetID;
             }
 
             contents["name"] = this.Name;
