@@ -22,7 +22,7 @@
 ## Inventory Archives (IAR)
 - Restored IAR save/load support via region console commands `save iar` / `load iar` (archives default to `/bin/user-inventory.iar` if no path given); assets flow through the configured asset service (WHIP).
 - Linkset data is serialized in XML2 and round-trips through IARs.
-- Usage and options documented in `docs/iar-notes.md` (perm filters, noassets/skipbadassets, merge loads).
+- Usage and options documented in `docs/iar-notes.md` and `docs/Verge-IAR-Support.md` (perm filters, noassets/skipbadassets, merge loads, smoke steps).
 
 ## Linkset Data (behind flag)
 - Added config flag `EnableLinksetData` (Startup section, default false) to enable per-linkset key/value storage persisted with objects.
@@ -49,6 +49,7 @@
 - `OpenSim/Region/Framework/Interfaces/IInventoryArchiverModule.cs`
 - `OpenSim/Region/CoreModules/Avatar/Inventory/Archiver/*`
 - `docs/iar-notes.md`
+- `docs/Verge-IAR-Support.md`
 
 ## Validation (manual steps recommended)
 - Edit/save a notecard inside a prim (object inventory) and confirm it persists after closing/reopening and after region restart.
