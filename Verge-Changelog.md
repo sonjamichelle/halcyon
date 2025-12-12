@@ -15,8 +15,9 @@
 - Always serialize `asset_id` for inventory items (including objects) and include `linked_id` for link/link-folder items to match newer Firestorm inventory expectations and avoid items being treated as broken/removed on fetch.
 - This addresses inventory loss seen with newer Firestorm builds when connecting to Halcyon (inventory fetch/serialization mismatch).
 - Inventory folder fetch (`FetchInventoryDescendents2`) now includes `parent_id`, `name`, `type`, and `preferred_type` in the top-level folder map so viewers receive complete folder metadata.
-- Overall: fetch responses now carry the key fields Firestorm expects for folders and items to prevent client-side pruning or “broken” entries during login/background fetch.
+- Overall: fetch responses now carry the key fields Firestorm expects for folders and items to prevent client-side pruning or "broken" entries during login/background fetch.
 - Seed caps now explicitly omit AISv3 caps (`InventoryAPIv3`, `LibraryAPIv3`) so Firestorm stays on legacy inventory APIs Halcyon supports, avoiding viewer attempts to use unsupported AIS v3 endpoints.
+- Added a manual inventory smoke checklist (`docs/inventory-smoke.md`) to validate Firestorm compatibility (folders/items populate, links resolve, notecards save, embedded items copy, post-restart consistency).
 
 ## Files Touched
 - `OpenSim/Region/CoreModules/Capabilities/InventoryCapsModule.cs`
@@ -24,6 +25,7 @@
 - `InWorldz/InWorldz.Phlox.Engine/LSLSystemAPI.cs`
 - `OpenSim/Region/ClientStack/LindenUDP/LLClientView.cs`
 - `OpenSim/Framework/InventoryItemBase.cs`
+- `docs/inventory-smoke.md`
 
 ## Validation (manual steps recommended)
 - Edit/save a notecard inside a prim (object inventory) and confirm it persists after closing/reopening and after region restart.
