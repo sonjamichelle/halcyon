@@ -25,31 +25,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
+using System.Collections.Generic;
+using OpenMetaverse;
 using OpenSim.Framework;
-//using log4net;
+using OpenSim.Services.Interfaces;
 
-
-namespace OpenSim.Server.Handlers.Hypergrid
+namespace OpenSim.Services.HypergridService
 {
-    public class GatekeeperAgentHandler : OpenSim.Server.Handlers.Simulation.AgentPostHandler
+    public class UserAccountCache
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly IUserAccountService m_UserAccountService;
+        private readonly Dictionary<UUID, UserAccount> m_UserAccountCache = new Dictionary<UUID, UserAccount>();
 
-        private IGatekeeperService m_GatekeeperService;
-
-        public GatekeeperAgentHandler(IGatekeeperService gatekeeper, bool proxy) : base("/foreignagent")
+        public static UserAccountCache CreateUserAccountCache(IUserAccountService userAccountService)
         {
-            m_GatekeeperService = gatekeeper;
-            m_Proxy = proxy;
+            return new UserAccountCache(userAccountService);
         }
 
-        protected override bool CreateAgent(GridRegion source, GridRegion gatekeeper, GridRegion destination,
-            AgentCircuitData aCircuit, uint teleportFlags, bool fromLogin, EntityTransferContext ctx, out string reason)
+        public UserAccountCache(IUserAccountService userAccountService)
         {
-            return m_GatekeeperService.LoginAgent(source, aCircuit, destination, out reason);
+            m_UserAccountService = userAccountService;
+        }
+
+        public UserAccount GetUser(UUID uuid)
+        {
+            if (m_UserAccountCache.TryGetValue(uuid, out var user))
+                return user;
+
+            user = m_UserAccountService.GetUserAccount(UUID.Zero, uuid);
+            if (user != null)
+                m_UserAccountCache[uuid] = user;
+
+            return user;
         }
     }
 }

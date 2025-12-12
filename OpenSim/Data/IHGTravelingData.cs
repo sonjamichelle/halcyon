@@ -25,31 +25,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using System;
+using System.Collections.Generic;
+using OpenMetaverse;
 using OpenSim.Framework;
-//using log4net;
 
-
-namespace OpenSim.Server.Handlers.Hypergrid
+namespace OpenSim.Data
 {
-    public class GatekeeperAgentHandler : OpenSim.Server.Handlers.Simulation.AgentPostHandler
+    // This MUST be a ref type!
+    public class HGTravelingData
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        public UUID SessionID;
+        public UUID UserID;
+        public Dictionary<string, string> Data;
 
-        private IGatekeeperService m_GatekeeperService;
-
-        public GatekeeperAgentHandler(IGatekeeperService gatekeeper, bool proxy) : base("/foreignagent")
+        public HGTravelingData()
         {
-            m_GatekeeperService = gatekeeper;
-            m_Proxy = proxy;
+            Data = new Dictionary<string, string>();
         }
+    }
 
-        protected override bool CreateAgent(GridRegion source, GridRegion gatekeeper, GridRegion destination,
-            AgentCircuitData aCircuit, uint teleportFlags, bool fromLogin, EntityTransferContext ctx, out string reason)
-        {
-            return m_GatekeeperService.LoginAgent(source, aCircuit, destination, out reason);
-        }
+    public interface IHGTravelingData
+    {
+        HGTravelingData Get(UUID sessionID);
+        HGTravelingData[] GetSessions(UUID userID);
+        bool Store(HGTravelingData data);
+        bool Delete(UUID sessionID);
+        void DeleteOld();
     }
 }

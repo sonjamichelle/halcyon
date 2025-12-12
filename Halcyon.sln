@@ -136,6 +136,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSim.TestSuite", "OpenSi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSimProfile.Modules", "OpenSimProfile\Modules\OpenSimProfile.Modules.csproj", "{CD7723CB-0000-0000-0000-000000000000}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSim.Services.HypergridService", "OpenSim\Services\HypergridService\OpenSim.Services.HypergridService.csproj", "{08ECE473-0000-0000-0000-000000000010}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSim.Services.Connectors.Hypergrid", "OpenSim\Services\Connectors\Hypergrid\OpenSim.Services.Connectors.Hypergrid.csproj", "{08ECE473-0000-0000-0000-000000000011}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenSim.Servers.Handlers.Hypergrid", "OpenSim\Servers\Handlers\Hypergrid\OpenSim.Servers.Handlers.Hypergrid.csproj", "{08ECE473-0000-0000-0000-000000000012}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root Files", "Root Files", "{7E0BFFF7-4E41-46E8-9414-DD25EEDE002C}"
 	ProjectSection(SolutionItems) = preProject
 		LICENSE = LICENSE
@@ -424,5 +430,17 @@ Global
 		{CD7723CB-0000-0000-0000-000000000000}.Debug|x64.Build.0 = Debug|x64
 		{CD7723CB-0000-0000-0000-000000000000}.Release|x64.ActiveCfg = Release|x64
 		{CD7723CB-0000-0000-0000-000000000000}.Release|x64.Build.0 = Release|x64
+		{08ECE473-0000-0000-0000-000000000010}.Debug|x64.ActiveCfg = Debug|x64
+		{08ECE473-0000-0000-0000-000000000010}.Debug|x64.Build.0 = Debug|x64
+		{08ECE473-0000-0000-0000-000000000010}.Release|x64.ActiveCfg = Release|x64
+		{08ECE473-0000-0000-0000-000000000010}.Release|x64.Build.0 = Release|x64
+		{08ECE473-0000-0000-0000-000000000011}.Debug|x64.ActiveCfg = Debug|x64
+		{08ECE473-0000-0000-0000-000000000011}.Debug|x64.Build.0 = Debug|x64
+		{08ECE473-0000-0000-0000-000000000011}.Release|x64.ActiveCfg = Release|x64
+		{08ECE473-0000-0000-0000-000000000011}.Release|x64.Build.0 = Release|x64
+		{08ECE473-0000-0000-0000-000000000012}.Debug|x64.ActiveCfg = Debug|x64
+		{08ECE473-0000-0000-0000-000000000012}.Debug|x64.Build.0 = Debug|x64
+		{08ECE473-0000-0000-0000-000000000012}.Release|x64.ActiveCfg = Release|x64
+		{08ECE473-0000-0000-0000-000000000012}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

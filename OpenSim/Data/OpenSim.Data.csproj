@@ -115,13 +115,16 @@
 		<Private>False</Private>
 	  </ProjectReference>
 	</ItemGroup>
-	<ItemGroup>
-	  <Compile Include="AssetDataBase.cs">
-		<SubType>Code</SubType>
-	  </Compile>
-	  <Compile Include="CheckedInventoryStorage.cs">
-		<SubType>Code</SubType>
-	  </Compile>
+  <ItemGroup>
+    <Compile Include="AssetDataBase.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="IHGTravelingData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CheckedInventoryStorage.cs">
+      <SubType>Code</SubType>
+    </Compile>
 	  <Compile Include="DataPluginFactory.cs">
 		<SubType>Code</SubType>
 	  </Compile>

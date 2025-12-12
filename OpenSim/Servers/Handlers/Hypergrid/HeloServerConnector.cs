@@ -25,31 +25,53 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-using OpenSim.Services.Interfaces;
-using GridRegion = OpenSim.Services.Interfaces.GridRegion;
-using OpenSim.Framework;
-//using log4net;
-
+using System.Net;
+using System.Reflection;
+using Nini.Config;
+using log4net;
+using OpenSim.Framework.Servers.HttpServer;
+using OpenSim.Server.Handlers.Base;
 
 namespace OpenSim.Server.Handlers.Hypergrid
 {
-    public class GatekeeperAgentHandler : OpenSim.Server.Handlers.Simulation.AgentPostHandler
+    public class HeloServiceInConnector : ServiceConnector
     {
-//        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private IGatekeeperService m_GatekeeperService;
-
-        public GatekeeperAgentHandler(IGatekeeperService gatekeeper, bool proxy) : base("/foreignagent")
+        public HeloServiceInConnector(IConfigSource config, IHttpServer server, string configName) :
+                base(config, server, configName)
         {
-            m_GatekeeperService = gatekeeper;
-            m_Proxy = proxy;
+            server.AddSimpleStreamHandler(new HeloServerGetAndHeadHandler("opensim-robust"));
+        }
+    }
+
+    public class HeloServerGetAndHeadHandler : SimpleStreamHandler
+    {
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private string m_HandlersType;
+
+        public HeloServerGetAndHeadHandler(string handlersType) : base("/helo")
+        {
+            m_HandlersType = handlersType;
         }
 
-        protected override bool CreateAgent(GridRegion source, GridRegion gatekeeper, GridRegion destination,
-            AgentCircuitData aCircuit, uint teleportFlags, bool fromLogin, EntityTransferContext ctx, out string reason)
+        protected override void ProcessRequest(IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
         {
-            return m_GatekeeperService.LoginAgent(source, aCircuit, destination, out reason);
+            if (httpRequest.HttpMethod == "GET")
+            {
+                //Obsolete
+                m_log.Debug("[HELO]: hi, GET was called");
+            }
+            else if (httpRequest.HttpMethod == "HEAD")
+            {
+                m_log.Debug("[HELO]: hi, HEAD was called");
+            }
+            else
+            {
+                httpResponse.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                return;
+            }
+            httpResponse.AddHeader("X-Handlers-Provided", m_HandlersType);
+            httpResponse.StatusCode = (int)HttpStatusCode.OK;
         }
     }
 }

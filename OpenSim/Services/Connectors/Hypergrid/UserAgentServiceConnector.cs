@@ -1,84 +1,577 @@
 /*
  * Copyright (c) Contributors, http://opensimulator.org/
+ * See CONTRIBUTORS.TXT for a full list of copyright holders.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the OpenSimulator Project nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using OpenMetaverse;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Text;
 using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
+using OpenSim.Services.Connectors.Simulation;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
+using OpenMetaverse;
+using OpenMetaverse.StructuredData;
+using log4net;
+using Nwc.XmlRpc;
+using Nini.Config;
+using System.Net.Http;
 
 namespace OpenSim.Services.Connectors.Hypergrid
 {
-    public class UserAgentServiceConnector : IUserAgentService
+    public class UserAgentServiceConnector : SimulationServiceConnector, IUserAgentService
     {
-        public UserAgentServiceConnector(string serverURI)
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private string m_ServerURL;
+        private GridRegion m_Gatekeeper;
+
+        public UserAgentServiceConnector(string url)
         {
-            ServerURI = serverURI;
+            setServiceURL(url);
         }
 
-        public string ServerURI { get; private set; }
-
-        public bool LoginAgentToGrid(GridRegion source, AgentCircuitData agent, GridRegion gatekeeper, GridRegion finalDestination, bool fromLogin, out string reason)
+        public UserAgentServiceConnector(IConfigSource config)
         {
-            reason = "not implemented";
-            return false;
+            GridInfo tmp = new GridInfo(config);
+
+            string serviceURI = tmp.HomeURL;
+
+            if (String.IsNullOrWhiteSpace(serviceURI))
+            {
+                m_log.Error("[USER AGENT CONNECTOR]: No Home URI named in configuration");
+                throw new Exception("UserAgent connector init error");
+            }
+
+            if (!setServiceURL(serviceURI))
+            {
+                throw new Exception("UserAgent connector init error");
+            }
         }
 
-        public void LogoutAgent(UUID userID, UUID sessionID)
+        private bool setServiceURL(string url)
         {
+            url = url.ToLower();
+            try
+            {
+                Uri tmpuri = new Uri(url);
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[USER AGENT CONNECTOR]: Malformed Uri {0}: {1}", url, e.Message);
+                return false;
+            }
+
+            m_ServerURL = url;
+            if (!m_ServerURL.EndsWith("/"))
+                m_ServerURL += "/";
+
+            return true;
+        }
+
+        protected override string AgentPath()
+        {
+            return "homeagent/";
+        }
+
+        public bool LoginAgentToGrid(GridRegion source, AgentCircuitData aCircuit, GridRegion gatekeeper, GridRegion destination, bool fromLogin, out string reason)
+        {
+            reason = String.Empty;
+
+            if (destination == null)
+            {
+                reason = "Destination is null";
+                m_log.Debug("[USER AGENT CONNECTOR]: Given destination is null");
+                return false;
+            }
+
+            GridRegion home = new GridRegion()
+            {
+                ServerURI = m_ServerURL,
+                RegionID = destination.RegionID,
+                RegionLocX = destination.RegionLocX,
+                RegionLocY = destination.RegionLocY
+            };
+
+            m_Gatekeeper = gatekeeper;
+
+            uint flags = fromLogin ? (uint)TeleportFlags.ViaLogin : (uint)TeleportFlags.ViaHome;
+            return CreateAgent(source, home, aCircuit, flags, new EntityTransferContext(), out reason);
+        }
+
+        public bool LoginAgentToGrid(GridRegion source, AgentCircuitData aCircuit, GridRegion gatekeeper, GridRegion destination, out string reason)
+        {
+            return LoginAgentToGrid(source, aCircuit, gatekeeper, destination, false, out reason);
+        }
+
+        protected override void PackData(OSDMap args, GridRegion source, AgentCircuitData aCircuit, GridRegion destination, uint flags)
+        {
+            base.PackData(args, source, aCircuit, destination, flags);
+            args["gatekeeper_serveruri"] = OSD.FromString(m_Gatekeeper.ServerURI);
+            args["gatekeeper_host"] = OSD.FromString(m_Gatekeeper.ExternalHostName);
+            args["gatekeeper_port"] = OSD.FromString(m_Gatekeeper.HttpPort.ToString());
+            args["destination_serveruri"] = OSD.FromString(destination.ServerURI);
+        }
+
+        public void SetClientToken(UUID sessionID, string token)
+        {
+        }
+
+        private Hashtable CallServer(string methodName, Hashtable hash)
+        {
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest(methodName, paramList);
+
+            XmlRpcResponse response = null;
+            try
+            {
+                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
+                response = request.Send(m_ServerURL, hclient);
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[USER AGENT CONNECTOR]: {0} call to {1} failed: {2}", methodName, m_ServerURL, e.Message);
+                throw;
+            }
+
+            if (response == null || response.IsFault)
+            {
+                throw new Exception(string.Format("[USER AGENT CONNECTOR]: {0} call to {1} returned an error: {2}", methodName, m_ServerURL, response.FaultString));
+            }
+
+            if (!(response.Value is Hashtable))
+            {
+                throw new Exception(string.Format("[USER AGENT CONNECTOR]: {0} call to {1} returned null", methodName, m_ServerURL));
+            }
+
+            return (Hashtable)response.Value;
         }
 
         public GridRegion GetHomeRegion(UUID userID, out Vector3 position, out Vector3 lookAt)
         {
-            position = Vector3.Zero;
-            lookAt = Vector3.Zero;
-            return null;
-        }
+            position = Vector3.UnitY; lookAt = Vector3.UnitY;
 
-        public Dictionary<string, object> GetServerURLs(UUID userID)
-        {
-            return new Dictionary<string, object>();
-        }
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
 
-        public Dictionary<string, object> GetUserInfo(UUID userID)
-        {
-            return new Dictionary<string, object>();
-        }
+            hash = CallServer("get_home_region", hash);
 
-        public string LocateUser(UUID userID)
-        {
-            return String.Empty;
-        }
+            bool success;
+            if (!Boolean.TryParse((string)hash["result"], out success) || !success)
+                return null;
 
-        public string GetUUI(UUID userID, UUID targetUserID)
-        {
-            return String.Empty;
-        }
+            GridRegion region = new GridRegion();
 
-        public UUID GetUUID(string first, string last)
-        {
-            return UUID.Zero;
-        }
+            UUID.TryParse((string)hash["uuid"], out region.RegionID);
+            int n = 0;
+            if (hash["x"] != null)
+            {
+                Int32.TryParse((string)hash["x"], out n);
+                region.RegionLocX = n;
+            }
+            if (hash["y"] != null)
+            {
+                Int32.TryParse((string)hash["y"], out n);
+                region.RegionLocY = n;
+            }
+            if (hash["size_x"] != null)
+            {
+                Int32.TryParse((string)hash["size_x"], out n);
+                region.RegionSizeX = n;
+            }
+            if (hash["size_y"] != null)
+            {
+                Int32.TryParse((string)hash["size_y"], out n);
+                region.RegionSizeY = n;
+            }
+            if (hash["region_name"] != null)
+            {
+                region.RegionName = (string)hash["region_name"];
+            }
+            if (hash["hostname"] != null)
+                region.ExternalHostName = (string)hash["hostname"];
+            if (hash["http_port"] != null)
+            {
+                uint p = 0;
+                UInt32.TryParse((string)hash["http_port"], out p);
+                region.HttpPort = p;
+            }
+            if (hash.ContainsKey("server_uri") && hash["server_uri"] != null)
+                region.ServerURI = (string)hash["server_uri"];
 
-        public List<UUID> StatusNotification(List<string> friends, UUID userID, bool online)
-        {
-            return new List<UUID>();
+            if (hash["internal_port"] != null)
+            {
+                int p = 0;
+                Int32.TryParse((string)hash["internal_port"], out p);
+                region.InternalEndPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), p);
+            }
+            if (hash["position"] != null)
+                Vector3.TryParse((string)hash["position"], out position);
+            if (hash["lookAt"] != null)
+                Vector3.TryParse((string)hash["lookAt"], out lookAt);
+
+            return region;
         }
 
         public bool IsAgentComingHome(UUID sessionID, string thisGridExternalName)
         {
-            return false;
+            Hashtable hash = new Hashtable();
+            hash["sessionID"] = sessionID.ToString();
+            hash["externalName"] = thisGridExternalName;
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("agent_is_coming_home", paramList);
+            string reason = string.Empty;
+            return GetBoolResponse(request, out reason);
         }
 
         public bool VerifyAgent(UUID sessionID, string token)
         {
-            return false;
+            Hashtable hash = new Hashtable();
+            hash["sessionID"] = sessionID.ToString();
+            hash["token"] = token;
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("verify_agent", paramList);
+            string reason = string.Empty;
+            return GetBoolResponse(request, out reason);
         }
 
-        public bool VerifyClient(UUID sessionID, string reportedIP)
+        public bool VerifyClient(UUID sessionID, string token)
         {
-            return false;
+            Hashtable hash = new Hashtable();
+            hash["sessionID"] = sessionID.ToString();
+            hash["token"] = token;
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("verify_client", paramList);
+            string reason = string.Empty;
+            return GetBoolResponse(request, out reason);
         }
+
+        public void LogoutAgent(UUID userID, UUID sessionID)
+        {
+            Hashtable hash = new Hashtable();
+            hash["sessionID"] = sessionID.ToString();
+            hash["userID"] = userID.ToString();
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("logout_agent", paramList);
+            string reason = string.Empty;
+            GetBoolResponse(request, out reason);
+        }
+
+        [Obsolete]
+        public List<UUID> StatusNotification(List<string> friends, UUID userID, bool online)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+            hash["online"] = online.ToString();
+            int i = 0;
+            foreach (string s in friends)
+            {
+                hash["friend_" + i.ToString()] = s;
+                i++;
+            }
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("status_notification", paramList);
+
+            List<UUID> friendsOnline = new List<UUID>();
+            XmlRpcResponse response = null;
+            try
+            {
+                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
+                response = request.Send(m_ServerURL, hclient);
+            }
+            catch
+            {
+                m_log.DebugFormat("[USER AGENT CONNECTOR]: Unable to contact remote server {0} for StatusNotification", m_ServerURL);
+                return friendsOnline;
+            }
+
+            if (response.IsFault)
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: remote call to {0} for StatusNotification returned an error: {1}", m_ServerURL, response.FaultString);
+                return friendsOnline;
+            }
+
+            hash = (Hashtable)response.Value;
+            try
+            {
+                if (hash == null)
+                {
+                    m_log.ErrorFormat("[USER AGENT CONNECTOR]: GetOnlineFriends Got null response from {0}! THIS IS BAAAAD", m_ServerURL);
+                    return friendsOnline;
+                }
+
+                foreach (object key in hash.Keys)
+                {
+                    if (key is string && ((string)key).StartsWith("friend_") && hash[key] != null)
+                    {
+                        UUID uuid;
+                        if (UUID.TryParse(hash[key].ToString(), out uuid))
+                            friendsOnline.Add(uuid);
+                    }
+                }
+
+            }
+            catch
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: Got exception on GetOnlineFriends response.");
+            }
+
+            return friendsOnline;
+        }
+
+        [Obsolete]
+        public List<UUID> GetOnlineFriends(UUID userID, List<string> friends)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+            int i = 0;
+            foreach (string s in friends)
+            {
+                hash["friend_" + i.ToString()] = s;
+                i++;
+            }
+
+            IList paramList = new ArrayList();
+            paramList.Add(hash);
+
+            XmlRpcRequest request = new XmlRpcRequest("get_online_friends", paramList);
+
+            List<UUID> online = new List<UUID>();
+            XmlRpcResponse response = null;
+            try
+            {
+                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
+                response = request.Send(m_ServerURL, hclient);
+            }
+            catch
+            {
+                m_log.DebugFormat("[USER AGENT CONNECTOR]: Unable to contact remote server {0} for GetOnlineFriends", m_ServerURL);
+                return online;
+            }
+
+            if (response.IsFault)
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: remote call to {0} for GetOnlineFriends returned an error: {1}", m_ServerURL, response.FaultString);
+                return online;
+            }
+
+            hash = (Hashtable)response.Value;
+            try
+            {
+                if (hash == null)
+                {
+                    m_log.ErrorFormat("[USER AGENT CONNECTOR]: GetOnlineFriends Got null response from {0}! THIS IS BAAAAD", m_ServerURL);
+                    return online;
+                }
+
+                foreach (object key in hash.Keys)
+                {
+                    if (key is string && ((string)key).StartsWith("friend_") && hash[key] != null)
+                    {
+                        UUID uuid;
+                        if (UUID.TryParse(hash[key].ToString(), out uuid))
+                            online.Add(uuid);
+                    }
+                }
+
+            }
+            catch
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: Got exception on GetOnlineFriends response.");
+            }
+
+            return online;
+        }
+
+        public Dictionary<string,object> GetUserInfo (UUID userID)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+
+            hash = CallServer("get_user_info", hash);
+
+            Dictionary<string, object> info = new Dictionary<string, object>();
+
+            foreach (object key in hash.Keys)
+            {
+                if (hash[key] != null)
+                {
+                    info.Add(key.ToString(), hash[key]);
+                }
+            }
+
+            return info;
+        }
+
+        public Dictionary<string, object> GetServerURLs(UUID userID)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+
+            hash = CallServer("get_server_urls", hash);
+
+            Dictionary<string, object> serverURLs = new Dictionary<string, object>();
+            foreach (object key in hash.Keys)
+            {
+                if (key is string && ((string)key).StartsWith("SRV_") && hash[key] != null)
+                {
+                    string serverType = key.ToString().Substring(4);
+                    serverURLs.Add(serverType, hash[key].ToString());
+                }
+            }
+
+            return serverURLs;
+        }
+
+        public string LocateUser(UUID userID)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+
+            hash = CallServer("locate_user", hash);
+
+            string url = string.Empty;
+
+            if (hash.ContainsKey("URL"))
+                url = hash["URL"].ToString();
+
+            return url;
+        }
+
+        public string GetUUI(UUID userID, UUID targetUserID)
+        {
+            Hashtable hash = new Hashtable();
+            hash["userID"] = userID.ToString();
+            hash["targetUserID"] = targetUserID.ToString();
+
+            hash = CallServer("get_uui", hash);
+
+            string uui = string.Empty;
+
+            if (hash.ContainsKey("UUI"))
+                uui = hash["UUI"].ToString();
+
+            return uui;
+        }
+
+        public UUID GetUUID(String first, String last)
+        {
+            Hashtable hash = new Hashtable();
+            hash["first"] = first;
+            hash["last"] = last;
+
+            hash = CallServer("get_uuid", hash);
+
+            if (!hash.ContainsKey("UUID"))
+            {
+                throw new Exception(string.Format("[USER AGENT CONNECTOR]: get_uuid call to {0} didn't return a UUID", m_ServerURL));
+            }
+
+            UUID uuid;
+            if (!UUID.TryParse(hash["UUID"].ToString(), out uuid))
+            {
+                throw new Exception(string.Format("[USER AGENT CONNECTOR]: get_uuid call to {0} returned an invalid UUID: {1}", m_ServerURL, hash["UUID"].ToString()));
+            }
+
+            return uuid;
+        }
+
+        private bool GetBoolResponse(XmlRpcRequest request, out string reason)
+        {
+            XmlRpcResponse response = null;
+            try
+            {
+                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
+                response = request.Send(m_ServerURL, hclient);
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[USER AGENT CONNECTOR]: Unable to contact remote server {0} for GetBoolResponse", m_ServerURL);
+                reason = "Exception: " + e.Message;
+                return false;
+            }
+
+            if (response.IsFault)
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: remote call to {0} for GetBoolResponse returned an error: {1}", m_ServerURL, response.FaultString);
+                reason = "XMLRPC Fault";
+                return false;
+            }
+
+            Hashtable hash = (Hashtable)response.Value;
+            try
+            {
+                if (hash == null)
+                {
+                    m_log.ErrorFormat("[USER AGENT CONNECTOR]: Got null response from {0}! THIS IS BAAAAD", m_ServerURL);
+                    reason = "Internal error 1";
+                    return false;
+                }
+                bool success = false;
+                reason = string.Empty;
+                if (hash.ContainsKey("result"))
+                    Boolean.TryParse((string)hash["result"], out success);
+                else
+                {
+                    reason = "Internal error 2";
+                    m_log.WarnFormat("[USER AGENT CONNECTOR]: response from {0} does not have expected key 'result'", m_ServerURL);
+                }
+
+                return success;
+            }
+            catch (Exception e)
+            {
+                m_log.ErrorFormat("[USER AGENT CONNECTOR]: Got exception on GetBoolResponse response.");
+                if (hash.ContainsKey("result") && hash["result"] != null)
+                    m_log.ErrorFormat("Reply was ", (string)hash["result"]);
+                reason = "Exception: " + e.Message;
+                return false;
+            }
+
+        }
+
     }
 }

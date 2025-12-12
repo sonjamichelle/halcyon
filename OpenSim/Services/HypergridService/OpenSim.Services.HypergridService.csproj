@@ -32,9 +32,29 @@
       <HintPath>..\..\bin\Nini.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="XmlRpcCS">
+      <HintPath>..\..\bin\XmlRpcCS.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Connectors\Hypergrid\OpenSim.Services.Connectors.Hypergrid.csproj">
+      <Project>{08ECE473-0000-0000-0000-000000000011}</Project>
+      <Name>OpenSim.Services.Connectors.Hypergrid</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\OpenSim.Services.Connectors.csproj">
+      <Project>{A54AE47C-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Services.Connectors</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Servers\Base\OpenSim.Servers.Base.csproj">
+      <Project>{89CACACA-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Servers.Base</Name>
+      <Private>False</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Interfaces\OpenSim.Services.Interfaces.csproj">
       <Project>{08ECE473-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Services.Interfaces</Name>
@@ -47,7 +67,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GatekeeperService.cs" />
+    <Compile Include="HGAssetService.cs" />
+    <Compile Include="HGFriendsService.cs" />
+    <Compile Include="HGFSAssetService.cs" />
+    <Compile Include="HGInstantMessageService.cs" />
+    <Compile Include="HGInventoryService.cs" />
+    <Compile Include="HGSuitcaseInventoryService.cs" />
     <Compile Include="UserAgentServiceBase.cs" />
+    <Compile Include="UserAgentService.cs" />
+    <Compile Include="UserAccountCache.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

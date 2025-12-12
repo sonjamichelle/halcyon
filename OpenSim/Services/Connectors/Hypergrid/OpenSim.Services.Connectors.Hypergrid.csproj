@@ -29,9 +29,19 @@
       <HintPath>..\..\bin\Nini.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="XmlRpcCS">
+      <HintPath>..\..\bin\XmlRpcCS.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Servers\Base\OpenSim.Servers.Base.csproj">
+      <Project>{89CACACA-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Servers.Base</Name>
+      <Private>False</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Interfaces\OpenSim.Services.Interfaces.csproj">
       <Project>{08ECE473-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Services.Interfaces</Name>
@@ -42,12 +52,18 @@
       <Name>OpenSim.Framework</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\OpenSim.Services.Connectors.csproj">
+      <Project>{A54AE47C-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Services.Connectors</Name>
+      <Private>False</Private>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GatekeeperServiceConnector.cs" />
     <Compile Include="HGFriendsServicesConnector.cs" />
     <Compile Include="HeloServicesConnector.cs" />
     <Compile Include="UserAgentServiceConnector.cs" />
+    <Compile Include="..\Simulation\SimulationServiceConnector.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
