@@ -1,0 +1,63 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+  <PropertyGroup>
+    <ProjectGuid>{08ECE473-0000-0000-0000-000000000012}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <OutputPath>..\..\bin\</OutputPath>
+    <AssemblyName>OpenSim.Servers.Handlers.Hypergrid</AssemblyName>
+    <RootNamespace>OpenSim.Servers.Handlers.Hypergrid</RootNamespace>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net">
+      <HintPath>..\..\bin\log4net.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Nini">
+      <HintPath>..\..\bin\Nini.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse">
+      <HintPath>..\..\bin\LibreMetaverse.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse.StructuredData">
+      <HintPath>..\..\bin\LibreMetaverse.StructuredData.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse.Types">
+      <HintPath>..\..\bin\LibreMetaverse.Types.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Framework\OpenSim.Framework.csproj">
+      <Project>{BCCDBB55-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Framework</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Framework\Servers\Base\OpenSim.Framework.Servers.Base.csproj">
+      <Project>{6F4C12E7-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Framework.Servers.Base</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Framework\Servers\HttpServer\OpenSim.Framework.Servers.HttpServer.csproj">
+      <Project>{159EC5C2-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Framework.Servers.HttpServer</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Services\Interfaces\OpenSim.Services.Interfaces.csproj">
+      <Project>{08ECE473-0000-0000-0000-000000000000}</Project>
+      <Name>OpenSim.Services.Interfaces</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AgentHandlers.cs" />
+    <Compile Include="GatekeeperServerConnector.cs" />
+    <Compile Include="HypergridHandlers.cs" />
+    <Compile Include="UserAgentServerConnector.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>
