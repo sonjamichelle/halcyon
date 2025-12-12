@@ -114,7 +114,7 @@ namespace InWorldz.Whip.Client
         public virtual void LoadDefaultAssets(string pAssetSetsXml)
         {
             _log.Info("[ASSET SERVER]: Setting up asset database");
-            var signpostMarkerFilename = $"{pAssetSetsXml}.loaded";
+            var signpostMarkerFilename = string.Format("{0}.loaded", pAssetSetsXml);
 
             if (File.Exists(signpostMarkerFilename))
             {
@@ -131,7 +131,7 @@ namespace InWorldz.Whip.Client
                 }
                 catch(Exception e)
                 {
-                    _log.Error($"Unable to create file '{signpostMarkerFilename}' to mark default assets as having been already loaded.", e);
+                    _log.Error(string.Format("Unable to create file '{0}' to mark default assets as having been already loaded.", signpostMarkerFilename), e);
                 }
             }
         }

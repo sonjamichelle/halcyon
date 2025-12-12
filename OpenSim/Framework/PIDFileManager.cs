@@ -55,7 +55,7 @@ namespace OpenSim.Framework
             PidFile = pidFile;
             if (string.IsNullOrWhiteSpace(pidFile))
             {
-                PidFile = $"{Path.GetFileName(thisProcess.MainModule.FileName)}.pid";
+                PidFile = string.Format("{0}.pid", Path.GetFileName(thisProcess.MainModule.FileName));
             }
 
             this.SetStatus(Status.Init);
@@ -67,7 +67,7 @@ namespace OpenSim.Framework
 
             using (FileStream pidFile = File.OpenWrite(PidFile))
             {
-                var pidInfo = $"{((int)status)} {pid}";
+                var pidInfo = string.Format("{0} {1}", (int)status, pid);
                 var utf8bytes = Encoding.UTF8.GetBytes(pidInfo);
 
                 pidFile.Write(utf8bytes, 0, utf8bytes.Length);

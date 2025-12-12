@@ -36,7 +36,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Collections.Generic;
-using OpenSim.Server.Base;
+using OpenSim.Servers.Base;
 using OpenSim.Services.Interfaces;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
 using GridRegion = OpenSim.Services.Interfaces.GridRegion;
@@ -68,8 +68,8 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 m_log.ErrorFormat("[HGFRIENDS HANDLER]: TheService is null!");
         }
 
-        protected override byte[] ProcessRequest(string path, Stream requestData,
-                IOSHttpRequest httpRequest, IOSHttpResponse httpResponse)
+        public override byte[] Handle(string path, Stream requestData,
+                OSHttpRequest httpRequest, OSHttpResponse httpResponse)
         {
             string body;
             using(StreamReader sr = new StreamReader(requestData))
@@ -135,6 +135,48 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
         #region Method-specific handlers
 
+        private FriendInfo ParseFriendInfo(Dictionary<string, object> request)
+        {
+            FriendInfo friend = new FriendInfo();
+            UUID parsedUuid;
+            if (request.ContainsKey("PrincipalID"))
+            {
+                if (UUID.TryParse(request["PrincipalID"].ToString(), out parsedUuid))
+                    friend.PrincipalID = parsedUuid;
+            }
+            if (request.ContainsKey("principalid"))
+            {
+                if (UUID.TryParse(request["principalid"].ToString(), out parsedUuid))
+                    friend.PrincipalID = parsedUuid;
+            }
+            if (request.ContainsKey("Friend"))
+                friend.Friend = request["Friend"].ToString();
+            if (request.ContainsKey("friend"))
+                friend.Friend = request["friend"].ToString();
+            int parsedInt;
+            if (request.ContainsKey("MyFlags"))
+            {
+                if (Int32.TryParse(request["MyFlags"].ToString(), out parsedInt))
+                    friend.MyFlags = parsedInt;
+            }
+            if (request.ContainsKey("my_flags"))
+            {
+                if (Int32.TryParse(request["my_flags"].ToString(), out parsedInt))
+                    friend.MyFlags = parsedInt;
+            }
+            if (request.ContainsKey("TheirFlags"))
+            {
+                if (Int32.TryParse(request["TheirFlags"].ToString(), out parsedInt))
+                    friend.TheirFlags = parsedInt;
+            }
+            if (request.ContainsKey("their_flags"))
+            {
+                if (Int32.TryParse(request["their_flags"].ToString(), out parsedInt))
+                    friend.TheirFlags = parsedInt;
+            }
+            return friend;
+        }
+
         byte[] GetFriendPerms(Dictionary<string, object> request)
         {
             if (!VerifyServiceKey(request))
@@ -169,7 +211,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
         {
             bool verified = VerifyServiceKey(request);
 
-            FriendInfo friend = new FriendInfo(request);
+            FriendInfo friend = ParseFriendInfo(request);
 
             bool success = m_TheService.NewFriendship(friend, verified);
 
@@ -181,7 +223,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
         byte[] DeleteFriendship(Dictionary<string, object> request)
         {
-            FriendInfo friend = new FriendInfo(request);
+            FriendInfo friend = ParseFriendInfo(request);
             string secret = string.Empty;
             if (request.ContainsKey("SECRET"))
                 secret = request["SECRET"].ToString();
@@ -222,7 +264,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
         byte[] ValidateFriendshipOffered(Dictionary<string, object> request)
         {
-            FriendInfo friend = new FriendInfo(request);
+            FriendInfo friend = ParseFriendInfo(request);
             UUID friendID = UUID.Zero;
             if (!UUID.TryParse(friend.Friend, out friendID))
                 return BoolResult(false);
@@ -281,7 +323,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             string xmlString = ServerUtils.BuildXmlResponse(result);
 
             //m_log.DebugFormat("[GRID HANDLER]: resp string: {0}", xmlString);
-            return Util.UTF8NoBomEncoding.GetBytes(xmlString);
+            return Encoding.UTF8.GetBytes(xmlString);
         }
 
         #endregion
@@ -335,7 +377,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             rootElement.AppendChild(result);
 
-            return Util.DocToBytes(doc);
+            return Encoding.UTF8.GetBytes(doc.OuterXml);
         }
 
         private byte[] SuccessResult(string value)
@@ -362,7 +404,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             rootElement.AppendChild(message);
 
-            return Util.DocToBytes(doc);
+            return Encoding.UTF8.GetBytes(doc.OuterXml);
         }
 
 
@@ -395,7 +437,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             rootElement.AppendChild(message);
 
-            return Util.DocToBytes(doc);
+            return Encoding.UTF8.GetBytes(doc.OuterXml);
         }
 
         private byte[] BoolResult(bool value)
@@ -417,7 +459,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
 
             rootElement.AppendChild(result);
 
-            return Util.DocToBytes(doc);
+            return Encoding.UTF8.GetBytes(doc.OuterXml);
         }
 
         #endregion

@@ -5,6 +5,7 @@
 
 using System;
 using OpenMetaverse;
+using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
 
 namespace OpenSim.Region.Framework.Interfaces
@@ -26,9 +27,11 @@ namespace OpenSim.Region.Framework.Interfaces
         event InventoryArchiveSaved OnInventoryArchiveSaved;
         event InventoryArchiveLoaded OnInventoryArchiveLoaded;
 
-        void DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string loadPath, bool merge);
-        void DearchiveInventory(UUID id, string firstName, string lastName, string invPath, System.IO.Stream loadStream, bool merge);
+        bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, string loadPath, bool merge);
+        bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, System.IO.Stream loadStream, bool merge);
+        bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, System.IO.Stream loadStream, bool merge);
         void ArchiveInventory(UUID id, string firstName, string lastName, string invPath, string savePath);
-        void ArchiveInventory(UUID id, string firstName, string lastName, string invPath, System.IO.Stream saveStream, string perm = null, bool skipAssets = false, bool skipNoPerms = false);
+        bool ArchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, System.IO.Stream saveStream);
+        bool ArchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, System.IO.Stream saveStream, System.Collections.Generic.Dictionary<string, object> options);
     }
 }

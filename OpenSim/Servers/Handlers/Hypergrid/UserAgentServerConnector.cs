@@ -33,7 +33,7 @@ using System.Reflection;
 
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Server.Base;
+using OpenSim.Servers.Base;
 using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Handlers.Base;
@@ -110,7 +110,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             server.AddXmlRPCHandler("get_uui", GetUUI, false);
             server.AddXmlRPCHandler("get_uuid", GetUUID, false);
 
-            server.AddSimpleStreamHandler(new HomeAgentHandler(m_HomeUsersService, loginServerIP, proxy), true);
+            server.AddStreamHandler(new HomeAgentHandler(m_HomeUsersService, loginServerIP, proxy));
         }
 
         public XmlRpcResponse GetHomeRegion(XmlRpcRequest request, IPEndPoint remoteClient)

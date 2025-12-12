@@ -169,7 +169,8 @@ namespace OpenSim.Framework
             m_configMember.addConfigurationOption("ssl_private_certificate", ConfigurationOption.ConfigurationTypes.TYPE_STRING,
                                                   "Path to private key certificate", string.Empty, true);
             m_configMember.addConfigurationOption("ssl_public_certificate", ConfigurationOption.ConfigurationTypes.TYPE_STRING,
-                                                  $"Path to public key certificate [{ConfigSettings.DefaultSSLPublicCertFile}]", ConfigSettings.DefaultSSLPublicCertFile, true);
+                                                  string.Format("Path to public key certificate [{0}]", ConfigSettings.DefaultSSLPublicCertFile),
+                                                  ConfigSettings.DefaultSSLPublicCertFile, true);
 
         }
 

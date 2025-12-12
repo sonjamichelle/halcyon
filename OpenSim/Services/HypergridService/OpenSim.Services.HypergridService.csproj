@@ -45,7 +45,7 @@
       <Name>OpenSim.Services.Connectors.Hypergrid</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\OpenSim.Services.Connectors.csproj">
+    <ProjectReference Include="..\Base\OpenSim.Services.Base.csproj">
       <Project>{A54AE47C-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Services.Connectors</Name>
       <Private>False</Private>

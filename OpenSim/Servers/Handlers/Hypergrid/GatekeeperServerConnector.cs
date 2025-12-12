@@ -30,7 +30,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Server.Base;
+using OpenSim.Servers.Base;
 using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Handlers.Base;
@@ -73,7 +73,7 @@ namespace OpenSim.Server.Handlers.Hypergrid
             server.AddXmlRPCHandler("link_region", hghandlers.LinkRegionRequest, false);
             server.AddXmlRPCHandler("get_region", hghandlers.GetRegion, false);
 
-            server.AddSimpleStreamHandler(new GatekeeperAgentHandler(m_GatekeeperService, m_Proxy),true);
+            server.AddStreamHandler(new GatekeeperAgentHandler(m_GatekeeperService, m_Proxy));
         }
 
         public GatekeeperServiceInConnector(IConfigSource config, IHttpServer server, string configName)

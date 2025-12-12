@@ -25,55 +25,41 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System.IO;
-using System.Net;
-using System.Reflection;
-using Nini.Config;
-using log4net;
-using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Server.Handlers.Base;
+using System;
+using System.Collections.Generic;
+using OpenMetaverse;
 
-namespace OpenSim.Server.Handlers.Hypergrid
+namespace OpenSim.Framework
 {
-    public class HeloServiceInConnector : ServiceConnector
+    public class UserAccount
     {
-        public HeloServiceInConnector(IConfigSource config, IHttpServer server, string configName) :
-                base(config, server, configName)
+        public UUID PrincipalID;
+        public UUID ScopeID;
+        public string FirstName;
+        public string LastName;
+        public string Email;
+        public Dictionary<string, object> ServiceURLs;
+        public int Created;
+        public int UserLevel;
+        public int UserFlags;
+        public string UserTitle;
+
+        public string Name
         {
-            server.AddStreamHandler(new HeloServerGetAndHeadHandler("opensim-robust"));
-        }
-    }
-
-    public class HeloServerGetAndHeadHandler : BaseStreamHandler
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        private string m_HandlersType;
-
-        public HeloServerGetAndHeadHandler(string handlersType) : base("GET", "/helo")
-        {
-            m_HandlersType = handlersType;
+            get { return FirstName + " " + LastName; }
         }
 
-        public override byte[] Handle(string path, Stream requestData, OSHttpRequest httpRequest, OSHttpResponse httpResponse)
+        public UserAccount()
         {
-            if (httpRequest.HttpMethod == "GET")
-            {
-                //Obsolete
-                m_log.Debug("[HELO]: hi, GET was called");
-            }
-            else if (httpRequest.HttpMethod == "HEAD")
-            {
-                m_log.Debug("[HELO]: hi, HEAD was called");
-            }
-            else
-            {
-                httpResponse.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                return new byte[0];
-            }
-            httpResponse.AddHeader("X-Handlers-Provided", m_HandlersType);
-            httpResponse.StatusCode = (int)HttpStatusCode.OK;
-            return new byte[0];
+        }
+
+        public UserAccount(UUID scopeID, string firstName, string lastName, UUID principalID)
+        {
+            ScopeID = scopeID;
+            FirstName = firstName;
+            LastName = lastName;
+            PrincipalID = principalID;
+            ServiceURLs = new Dictionary<string, object>();
         }
     }
 }

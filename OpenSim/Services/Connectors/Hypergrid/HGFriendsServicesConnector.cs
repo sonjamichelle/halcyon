@@ -37,7 +37,7 @@ using OpenSim.Framework;
 using OpenSim.Services.Interfaces;
 using OpenSim.Services.Connectors.Friends;
 using FriendInfo = OpenSim.Services.Interfaces.FriendInfo;
-using OpenSim.Server.Base;
+using OpenSim.Servers.Base;
 using OpenMetaverse;
 
 namespace OpenSim.Services.Connectors.Hypergrid
@@ -68,7 +68,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             m_SessionID = sessionID;
         }
 
-        protected override string ServicePath()
+        protected string ServicePath()
         {
             return "hgfriends";
         }

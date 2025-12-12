@@ -10,60 +10,61 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="LibreMetaverse">
-      <HintPath>..\..\bin\LibreMetaverse.dll</HintPath>
+    <HintPath>..\..\..\..\bin\LibreMetaverse.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="LibreMetaverse.StructuredData">
-      <HintPath>..\..\bin\LibreMetaverse.StructuredData.dll</HintPath>
+    <HintPath>..\..\..\..\bin\LibreMetaverse.StructuredData.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="LibreMetaverse.Types">
-      <HintPath>..\..\bin\LibreMetaverse.Types.dll</HintPath>
+    <HintPath>..\..\..\..\bin\LibreMetaverse.Types.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="log4net">
-      <HintPath>..\..\bin\log4net.dll</HintPath>
+    <HintPath>..\..\..\..\bin\log4net.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Nini">
-      <HintPath>..\..\bin\Nini.dll</HintPath>
+    <HintPath>..\..\..\..\bin\Nini.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="XmlRpcCS">
-      <HintPath>..\..\bin\XmlRpcCS.dll</HintPath>
+    <HintPath>..\..\..\..\bin\XmlRpcCS.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Net.Http" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Servers\Base\OpenSim.Servers.Base.csproj">
+    <ProjectReference Include="..\..\..\Servers\Base\OpenSim.Servers.Base.csproj">
       <Project>{89CACACA-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Servers.Base</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\Interfaces\OpenSim.Services.Interfaces.csproj">
+    <ProjectReference Include="..\..\Interfaces\OpenSim.Services.Interfaces.csproj">
       <Project>{08ECE473-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Services.Interfaces</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\Framework\OpenSim.Framework.csproj">
+    <ProjectReference Include="..\..\..\Framework\OpenSim.Framework.csproj">
       <Project>{BCCDBB55-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Framework</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\OpenSim.Services.Connectors.csproj">
+    <ProjectReference Include="..\..\Base\OpenSim.Services.Base.csproj">
       <Project>{A54AE47C-0000-0000-0000-000000000000}</Project>
       <Name>OpenSim.Services.Connectors</Name>
       <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GatekeeperServiceConnector.cs" />
-    <Compile Include="HGFriendsServicesConnector.cs" />
-    <Compile Include="HeloServicesConnector.cs" />
-    <Compile Include="UserAgentServiceConnector.cs" />
-    <Compile Include="..\Simulation\SimulationServiceConnector.cs" />
+  <Compile Include="GatekeeperServiceConnector.cs" />
+  <Compile Include="FriendsSimConnector.cs" />
+  <Compile Include="HGFriendsServicesConnector.cs" />
+  <Compile Include="HeloServicesConnector.cs" />
+  <Compile Include="UserAgentServiceConnector.cs" />
+  <Compile Include="..\Simulation\SimulationServiceConnector.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

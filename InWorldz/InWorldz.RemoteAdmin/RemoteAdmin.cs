@@ -198,7 +198,7 @@ namespace InWorldz.RemoteAdmin
             }
             else
             {
-                m_log.Warn($"Failure to authenticate for remote administration from {remoteClient} as operating system user '{username}'");
+                m_log.Warn(string.Format("Failure to authenticate for remote administration from {0} as operating system user '{1}'", remoteClient, username));
                 System.Threading.Thread.Sleep(2000);
                 throw new Exception("Invalid Username or Password");
             }

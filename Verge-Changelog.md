@@ -1,8 +1,14 @@
 # Verge Base Fixes (Branch: verge-base-fixes)
 
+## Hypergrid Restore (in-progress scaffolding)
+- Added HG service/connectors stubs (Gatekeeper, UserAgent, HG friends/IM/inventory connectors, HG HTTP handlers) and minimal interfaces (`GridRegion`, `FriendInfo`, `EntityTransferContext`, `GridInfo`, `ISimulationService`, `IUserAccountService`) to begin wiring HG back in; all gated via `EnableHypergrid` (default false).
+- Ported WebUtil HTTP helpers needed by HG connectors; aligned SimulationServiceConnector pack/context handling and version negotiation stubs.
+- Brought back HG “suitcase” inventory service shell and HG handler glue; still needs references and missing support types (e.g., FSAsset/XInventory/HGTravelingData) to finish the build.
+- Current status: Hypergrid projects still have missing references (OpenMetaverse/log4net/Nini, XInventory/FSAsset, HGTravelingData, UserAccountCache, etc.). Pending: add csproj references and port/stub remaining support classes from the OpenSim 0.9.3 reference tree.
+
 ## Notecard Reliability
 - Added dedicated CAPS handler `UpdateNotecardTaskInventory` with `NoteCardTaskInventory` + `TaskInventoryItemUpdater` so task notecard uploads go to the correct endpoint instead of the script uploader.
-- Task notecard uploads now persist: server stores the new asset, updates the prim’s inventory item, and returns proper LLSD (`new_asset`, `new_inventory_item`, `state`).
+- Task notecard uploads now persist: server stores the new asset, updates the prim's inventory item, and returns proper LLSD (`new_asset`, `new_inventory_item`, `state`).
 - Split script vs notecard task update paths to avoid collisions; kept existing cap names for viewer compatibility.
 - Increased default notecard line read limit from 255 to 1023 (configurable; still capped at 65535) to prevent truncated reads.
 - Agent inventory updates for notecards/scripts unchanged; prim task notecards now use the correct uploader and asset update flow.

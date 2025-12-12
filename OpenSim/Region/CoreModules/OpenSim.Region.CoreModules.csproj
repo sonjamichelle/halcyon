@@ -104,11 +104,15 @@
 		<HintPath>..\..\..\bin\Mono.Addins.dll</HintPath>
 		<Private>False</Private>
 	  </Reference>
-	  <Reference Include="Nini" >
-		  <Name>Nini</Name>
-		<HintPath>..\..\..\bin\Nini.dll</HintPath>
+  <Reference Include="Nini" >
+	  <Name>Nini</Name>
+	<HintPath>..\..\..\bin\Nini.dll</HintPath>
 		<Private>False</Private>
-	  </Reference>
+  </Reference>
+  <Reference Include="NDesk.Options">
+    <HintPath>..\..\..\bin\NDesk.Options.dll</HintPath>
+    <Private>False</Private>
+  </Reference>
 	  <Reference Include="protobuf-net" >
 		  <Name>protobuf-net</Name>
 		<HintPath>..\..\..\bin\protobuf-net.dll</HintPath>
@@ -367,15 +371,6 @@
 		<SubType>Code</SubType>
 	  </Compile>
 	  <Compile Include="Avatar\InstantMessage\PresenceModule.cs">
-		<SubType>Code</SubType>
-	  </Compile>
-	  <Compile Include="Avatar\Inventory\Archiver\InventoryArchiveReadRequest.cs">
-		<SubType>Code</SubType>
-	  </Compile>
-	  <Compile Include="Avatar\Inventory\Archiver\InventoryArchiverModule.cs">
-		<SubType>Code</SubType>
-	  </Compile>
-	  <Compile Include="Avatar\Inventory\Archiver\InventoryArchiveWriteRequest.cs">
 		<SubType>Code</SubType>
 	  </Compile>
 	  <Compile Include="Avatar\Inventory\Transfer\InventoryTransferModule.cs">

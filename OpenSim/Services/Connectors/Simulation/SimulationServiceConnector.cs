@@ -14,9 +14,18 @@ using OpenSim.Services.Interfaces;
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using log4net;
+using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.Connectors.Simulation
 {
+    internal static class VersionInfo
+    {
+        public const double SimulationServiceVersionSupportedMin = 0.6;
+        public const double SimulationServiceVersionSupportedMax = 0.6;
+        public const double SimulationServiceVersionAcceptedMin = 0.3;
+        public const double SimulationServiceVersionAcceptedMax = 0.6;
+    }
+
     public class SimulationServiceConnector
     {
         private static readonly ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -34,19 +43,19 @@ namespace OpenSim.Services.Connectors.Simulation
         {
             if (source != null)
             {
-                args["source_x"] = OSD.FromString(source.RegionLocX.ToString());
-                args["source_y"] = OSD.FromString(source.RegionLocY.ToString());
+                args["source_x"] = OSD.FromInteger(source.RegionLocX);
+                args["source_y"] = OSD.FromInteger(source.RegionLocY);
                 args["source_name"] = OSD.FromString(source.RegionName);
-                args["source_uuid"] = OSD.FromString(source.RegionID.ToString());
+                args["source_uuid"] = OSD.FromUUID(source.RegionID);
                 if (!string.IsNullOrEmpty(source.RawServerURI))
                     args["source_server_uri"] = OSD.FromString(source.RawServerURI);
             }
 
-            args["destination_x"] = OSD.FromString(destination.RegionLocX.ToString());
-            args["destination_y"] = OSD.FromString(destination.RegionLocY.ToString());
+            args["destination_x"] = OSD.FromInteger(destination.RegionLocX);
+            args["destination_y"] = OSD.FromInteger(destination.RegionLocY);
             args["destination_name"] = OSD.FromString(destination.RegionName);
-            args["destination_uuid"] = OSD.FromString(destination.RegionID.ToString());
-            args["teleport_flags"] = OSD.FromString(flags.ToString());
+            args["destination_uuid"] = OSD.FromUUID(destination.RegionID);
+            args["teleport_flags"] = OSD.FromUInteger(flags);
         }
 
         public bool CreateAgent(GridRegion source, GridRegion destination, AgentCircuitData aCircuit, uint flags, EntityTransferContext ctx, out string reason)
@@ -66,10 +75,12 @@ namespace OpenSim.Services.Connectors.Simulation
             OSD tmpOSD;
             try
             {
-                OSDMap args = aCircuit.PackAgentCircuitData(ctx);
+                OSDMap args = aCircuit.PackAgentCircuitData();
                 if (ctx == null)
                     ctx = new EntityTransferContext();
-                args["context"] = ctx.Pack();
+                OSDMap ctxMap = new OSDMap();
+                ctx.Pack(ctxMap);
+                args["context"] = ctxMap;
                 PackData(args, source, aCircuit, destination, flags);
 
                 OSDMap result = WebUtil.PostToServiceCompressed(uri, args, 30000);
@@ -101,9 +112,9 @@ namespace OpenSim.Services.Connectors.Simulation
                     }
                 }
 
-                m_log.WarnFormat(
-                    "[REMOTE SIMULATION CONNECTOR]: Failed to create agent {0} {1} at remote simulator {2}",
-                    aCircuit.firstname, aCircuit.lastname, destination.RegionName);
+                    m_log.WarnFormat(
+                        "[REMOTE SIMULATION CONNECTOR]: Failed to create agent {0} {1} at remote simulator {2}",
+                    aCircuit.FirstName, aCircuit.LastName, destination.RegionName);
                 reason = result["Message"] != null ? result["Message"].AsString() : "error";
                 return false;
             }
@@ -172,13 +183,17 @@ namespace OpenSim.Services.Connectors.Simulation
 
             try
             {
-                OSDMap args = cAgentData.Pack(ctx);
+                OSDMap args = cAgentData.Pack();
 
-                args["destination_x"] = OSD.FromString(destination.RegionLocX.ToString());
-                args["destination_y"] = OSD.FromString(destination.RegionLocY.ToString());
+                args["destination_x"] = OSD.FromInteger(destination.RegionLocX);
+                args["destination_y"] = OSD.FromInteger(destination.RegionLocY);
                 args["destination_name"] = OSD.FromString(destination.RegionName);
-                args["destination_uuid"] = OSD.FromString(destination.RegionID.ToString());
-                args["context"] = ctx.Pack();
+                args["destination_uuid"] = OSD.FromUUID(destination.RegionID);
+                if (ctx == null)
+                    ctx = new EntityTransferContext();
+                OSDMap ctxMap = new OSDMap();
+                ctx.Pack(ctxMap);
+                args["context"] = ctxMap;
 
                 OSDMap result;
                 if (ctx.OutboundVersion >= 0.3)
@@ -191,7 +206,7 @@ namespace OpenSim.Services.Connectors.Simulation
                 if (result["Success"].AsBoolean())
                     return true;
                 if (ctx.OutboundVersion < 0.2)
-                    result = WebUtil.PutToService(uri, args, timeout);
+                    result = WebUtil.PutToServiceCompressed(uri, args, timeout);
 
                 return result["Success"].AsBoolean();
             }
@@ -219,7 +234,7 @@ namespace OpenSim.Services.Connectors.Simulation
             request.Add("simulation_service_accepted_min", OSD.FromReal(VersionInfo.SimulationServiceVersionAcceptedMin));
             request.Add("simulation_service_accepted_max", OSD.FromReal(VersionInfo.SimulationServiceVersionAcceptedMax));
 
-            request.Add("context", ctx.Pack());
+            request.Add("context", ctx != null ? ctx.Pack() : new OSDMap());
 
             OSDArray features = new OSDArray();
             foreach (UUID feature in featuresAvailable)
@@ -233,7 +248,7 @@ namespace OpenSim.Services.Connectors.Simulation
             OSD tmpOSD;
             try
             {
-                OSDMap result = WebUtil.ServiceOSDRequest(uri, request, "QUERYACCESS", 30000, false, false, true);
+                OSDMap result = WebUtil.PostToService(uri, request, 30000, false);
 
                 bool success = result["success"].AsBoolean();
                 bool has_Result = false;
@@ -294,16 +309,19 @@ namespace OpenSim.Services.Connectors.Simulation
 
                 featuresAvailable.Clear();
 
-                if (result.TryGetValue("features", out tmpOSD) && tmpOSD is OSDArray array)
+                OSDArray featureArray = null;
+                if (result.TryGetValue("features", out tmpOSD))
+                    featureArray = tmpOSD as OSDArray;
+                if (featureArray != null)
                 {
-                    foreach (OSD o in array)
+                    foreach (OSD o in featureArray)
                         featuresAvailable.Add(new UUID(o.AsString()));
                 }
 
                 if (ctx.OutboundVersion < 0.5)
-                    ctx.WearablesCount = AvatarWearable.LEGACY_VERSION_MAX_WEARABLES;
+                    ctx.WearablesCount = 13;
                 else if (ctx.OutboundVersion < 0.6)
-                    ctx.WearablesCount = AvatarWearable.LEGACY_VERSION_MAX_WEARABLES + 1;
+                    ctx.WearablesCount = 14;
                 else
                     ctx.WearablesCount = -1; // send all
 
@@ -321,7 +339,7 @@ namespace OpenSim.Services.Connectors.Simulation
         {
             try
             {
-                WebUtil.ServiceOSDRequest(uri, null, "DELETE", 10000, false, false);
+                WebUtil.ServiceOSDRequest(uri, null, "DELETE", 10000, false, false, false);
             }
             catch (Exception e)
             {
@@ -338,7 +356,7 @@ namespace OpenSim.Services.Connectors.Simulation
 
             try
             {
-                WebUtil.ServiceOSDRequest(uri, null, "DELETE", 10000, false, false);
+                WebUtil.ServiceOSDRequest(uri, null, "DELETE", 10000, false, false, false);
             }
             catch (Exception e)
             {

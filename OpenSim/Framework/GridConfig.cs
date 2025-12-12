@@ -99,7 +99,8 @@ namespace OpenSim.Framework
                                                 false);
 
             m_configMember.addConfigurationOption("ssl_public_certificate", ConfigurationOption.ConfigurationTypes.TYPE_STRING,
-                                                  $"Path to public key certificate [{ConfigSettings.DefaultSSLPublicCertFile}]", ConfigSettings.DefaultSSLPublicCertFile, true);
+                                                  string.Format("Path to public key certificate [{0}]", ConfigSettings.DefaultSSLPublicCertFile),
+                                                  ConfigSettings.DefaultSSLPublicCertFile, true);
         }
 
         public bool handleIncomingConfiguration(string configuration_key, object configuration_result)

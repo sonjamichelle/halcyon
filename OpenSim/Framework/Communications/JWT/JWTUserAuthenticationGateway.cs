@@ -85,7 +85,7 @@ namespace OpenSim.Framework.Communications.JWT
             payloadOptions.BirthDate = (new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).AddSeconds(profile.Created).ToUniversalTime();
             payloadOptions.PartnerId = profile.Partner.ToString();
 
-            m_log.Info($"[JWTGATEWAY] Granted token for '{payloadOptions.Scope}' to user '{payloadOptions.Username}' until {payloadOptions.Exp}");
+            m_log.Info(string.Format("[JWTGATEWAY] Granted token for '{0}' to user '{1}' until {2}", payloadOptions.Scope, payloadOptions.Username, payloadOptions.Exp));
 
             return new JWToken(payloadOptions, m_sigUtil);
         }

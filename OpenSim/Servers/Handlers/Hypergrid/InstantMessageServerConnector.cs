@@ -33,7 +33,7 @@ using System.Reflection;
 
 using Nini.Config;
 using OpenSim.Framework;
-using OpenSim.Server.Base;
+using OpenSim.Servers.Base;
 using OpenSim.Services.Interfaces;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Server.Handlers.Base;

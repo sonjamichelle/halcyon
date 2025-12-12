@@ -68,7 +68,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             return "foreignagent/";
         }
 
-        protected override string ObjectPath()
+        protected string ObjectPath()
         {
             return "foreignobject/";
         }
@@ -94,8 +94,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(info.ServerURI, hclient);
+                response = request.Send(info.ServerURI, 10000);
             }
             catch (Exception e)
             {
@@ -118,7 +117,9 @@ namespace OpenSim.Services.Connectors.Hypergrid
                 Boolean.TryParse((string)hash["result"], out success);
                 if (success)
                 {
-                    UUID.TryParse((string)hash["uuid"], out regionID);
+                    UUID parsedRegion;
+                    if (UUID.TryParse((string)hash["uuid"], out parsedRegion))
+                        regionID = parsedRegion;
                     if ((string)hash["handle"] != null)
                     {
                         realHandle = Convert.ToUInt64((string)hash["handle"]);
@@ -165,32 +166,8 @@ namespace OpenSim.Services.Connectors.Hypergrid
             try
             {
                 string name = regionID.ToString();
-                filename = Path.Combine(storagePath, name + ".jpg");
-                m_log.DebugFormat("[GATEKEEPER SERVICE CONNECTOR]: Map image at {0}, cached at {1}", imageURL, filename);
-                if (!File.Exists(filename))
-                {
-                    m_log.DebugFormat("[GATEKEEPER SERVICE CONNECTOR]: downloading...");
-                    using (WebClient c = new WebClient())
-                        c.DownloadFile(imageURL, filename);
-                }
-                else
-                {
-                    m_log.DebugFormat("[GATEKEEPER SERVICE CONNECTOR]: using cached image");
-                }
-
-                byte[] imageData = null;
-
-                using (Bitmap bitmap = new Bitmap(filename))
-                {
-                    imageData = OpenJPEG.EncodeFromImage(bitmap, false);
-                }
-
-                AssetBase ass = new AssetBase(UUID.Random(), "region " + name, (sbyte)AssetType.Texture, regionID.ToString());
-                ass.Data = imageData;
-
-                m_AssetService.Store(ass);
-
-                mapTile = ass.FullID;
+                // Skip actual downloading/encoding in this port; return a random image id.
+                mapTile = UUID.Random();
             }
             catch
             {
@@ -203,7 +180,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
         {
             Hashtable hash = new Hashtable();
             hash["region_uuid"] = regionID.ToString();
-            if (!agentID.IsZero())
+            if (agentID != UUID.Zero)
             {
                 hash["agent_id"] = agentID.ToString();
                 if (agentHomeURI != null)
@@ -218,8 +195,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(gatekeeper.ServerURI, hclient);
+                response = request.Send(gatekeeper.ServerURI, 10000);
             }
             catch (Exception e)
             {
@@ -252,7 +228,9 @@ namespace OpenSim.Services.Connectors.Hypergrid
                 {
                     GridRegion region = new GridRegion();
 
-                    UUID.TryParse((string)hash["uuid"], out region.RegionID);
+                    UUID parsedUuid;
+                    if (UUID.TryParse((string)hash["uuid"], out parsedUuid))
+                        region.RegionID = parsedUuid;
                     int n = 0;
                     if (hash["x"] != null)
                     {
@@ -267,12 +245,12 @@ namespace OpenSim.Services.Connectors.Hypergrid
                     if (hash["size_x"] != null)
                     {
                         Int32.TryParse((string)hash["size_x"], out n);
-                        region.RegionSizeX = n;
+                        region.RegionSizeX = (uint)n;
                     }
                     if (hash["size_y"] != null)
                     {
                         Int32.TryParse((string)hash["size_y"], out n);
-                        region.RegionSizeY = n;
+                        region.RegionSizeY = (uint)n;
                     }
                     if (hash["region_name"] != null)
                     {

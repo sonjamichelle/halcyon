@@ -262,7 +262,7 @@ namespace OpenSim.Framework.Console
                 var authHeader = headers["Authorization"].ToString();
                 if (!authHeader.StartsWith("Bearer ", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    m_log.Warn($"[REMOTECONSOLE] StartSession JWT Authorization header format failure from '{headers["remote_addr"]}'.");
+                    m_log.Warn(string.Format("[REMOTECONSOLE] StartSession JWT Authorization header format failure from '{0}'.", headers["remote_addr"]));
                     return reply;
                 }
 
@@ -279,15 +279,15 @@ namespace OpenSim.Framework.Console
                     // TODO: Make the scope strings come from some central list that can be registered into?
                     if (token.Payload.Scope != "remote-console")
                     {
-                        m_log.Warn($"[REMOTECONSOLE] StartSession invalid/expired/wrong scope JWToken from '{headers["remote_addr"]}'.");
+                        m_log.Warn(string.Format("[REMOTECONSOLE] StartSession invalid/expired/wrong scope JWToken from '{0}'.", headers["remote_addr"]));
                         return reply;
                     }
 
-                    m_log.Info($"[REMOTECONSOLE] StartSession access granted via JWT to '{token.Payload.Username}' from '{headers["remote_addr"]}'.");
+                    m_log.Info(string.Format("[REMOTECONSOLE] StartSession access granted via JWT to '{0}' from '{1}'.", token.Payload.Username, headers["remote_addr"]));
                 }
                 catch (JWTokenException jte)
                 {
-                    m_log.Error($"[REMOTECONSOLE] Failure with JWToken in StartSession from '{headers["remote_addr"]}': {jte}");
+                    m_log.Error(string.Format("[REMOTECONSOLE] Failure with JWToken in StartSession from '{0}': {1}", headers["remote_addr"], jte));
                     return reply;
                 }
             }
@@ -299,12 +299,12 @@ namespace OpenSim.Framework.Console
                 // Validate the username/password pair
                 if (Util.AuthenticateAsSystemUser(username, password) == false)
                 {
-                    m_log.Warn($"Failure to authenticate for remote administration from {headers["remote_addr"]} as operating system user '{username}'");
+                    m_log.Warn(string.Format("Failure to authenticate for remote administration from {0} as operating system user '{1}'", headers["remote_addr"], username));
                     Thread.Sleep(2000);
                     return reply;
                 }
 
-                m_log.Warn($"[REMOTECONSOLE] StartSession access granted via legacy system username and password to '{username}' from '{headers["remote_addr"]}'.");
+                m_log.Warn(string.Format("[REMOTECONSOLE] StartSession access granted via legacy system username and password to '{0}' from '{1}'.", username, headers["remote_addr"]));
             }
             else
             {
@@ -372,7 +372,7 @@ namespace OpenSim.Framework.Console
                 var authHeader = headers["Authorization"].ToString();
                 if (!authHeader.StartsWith("Bearer ", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    m_log.Warn($"[REMOTECONSOLE] CloseSession JWT Authorization header format failure from '{headers["remote_addr"]}'.");
+                    m_log.Warn(string.Format("[REMOTECONSOLE] CloseSession JWT Authorization header format failure from '{0}'.", headers["remote_addr"]));
                     return reply;
                 }
 
@@ -389,21 +389,22 @@ namespace OpenSim.Framework.Console
                     // TODO: Make the scope strings come from some central list that can be registered into?
                     if (token.Payload.Scope != "remote-console")
                     {
-                        m_log.Warn($"[REMOTECONSOLE] CloseSession wrong scope JWToken from '{headers["remote_addr"]}'.");
+                        m_log.Warn(string.Format("[REMOTECONSOLE] CloseSession wrong scope JWToken from '{0}'.", headers["remote_addr"]));
                         return reply;
                     }
 
-                    m_log.Info($"[REMOTECONSOLE] CloseSession for session '{post["ID"]}' accessed via JWT by '{token.Payload.Username}' from '{headers["remote_addr"]}'.");
+                    m_log.Info(string.Format("[REMOTECONSOLE] CloseSession for session '{0}' accessed via JWT by '{1}' from '{2}'.",
+                        post["ID"], token.Payload.Username, headers["remote_addr"]));
                 }
                 catch (JWTokenException jte)
                 {
-                    m_log.Error($"[REMOTECONSOLE] Failure with JWToken in CloseSession from '{headers["remote_addr"]}': {jte}");
+                    m_log.Error(string.Format("[REMOTECONSOLE] Failure with JWToken in CloseSession from '{0}': {1}", headers["remote_addr"], jte));
                     return reply;
                 }
             }
             else
             {
-                m_log.Warn($"[REMOTECONSOLE] CloseSession for session '{post["ID"]}' from '{headers["remote_addr"]}' being accessed without Authorization header!");
+                m_log.Warn(string.Format("[REMOTECONSOLE] CloseSession for session '{0}' from '{1}' being accessed without Authorization header!", post["ID"], headers["remote_addr"]));
             }
             // BUG: Longstanding issue: if someone gets ahold of, or guesses, the ID and/or JWT of another user they can close the console.
             // The only way I can think to close this bug is to associate each session with something the user cannot change. Not sure, but maybe the IP address of the connection would work?
@@ -449,7 +450,8 @@ namespace OpenSim.Framework.Console
             reply["content_type"] = "text/xml";
             reply = CheckOrigin(reply);
 
-            m_log.Info($"[REMOTECONSOLE] CloseSession successful for user '{token?.Payload.Username}' with session '{id}' from '{headers["remote_addr"]}'.");
+            m_log.Info(string.Format("[REMOTECONSOLE] CloseSession successful for user '{0}' with session '{1}' from '{2}'.",
+                token != null ? token.Payload.Username : null, id, headers["remote_addr"]));
 
             return reply;
         }
@@ -471,7 +473,7 @@ namespace OpenSim.Framework.Console
                 var authHeader = headers["Authorization"].ToString();
                 if (!authHeader.StartsWith("Bearer ", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    m_log.Warn($"[REMOTECONSOLE] SessionCommand JWT Authorization header format failure from '{headers["remote_addr"]}'.");
+                    m_log.Warn(string.Format("[REMOTECONSOLE] SessionCommand JWT Authorization header format failure from '{0}'.", headers["remote_addr"]));
                     return reply;
                 }
 
@@ -488,21 +490,22 @@ namespace OpenSim.Framework.Console
                     // TODO: Make the scope strings come from some central list that can be registered into?
                     if (token.Payload.Scope != "remote-console")
                     {
-                        m_log.Warn($"[REMOTECONSOLE] SessionCommand wrong scope JWToken from '{headers["remote_addr"]}'.");
+                        m_log.Warn(string.Format("[REMOTECONSOLE] SessionCommand wrong scope JWToken from '{0}'.", headers["remote_addr"]));
                         return reply;
                     }
 
-                    m_log.Info($"[REMOTECONSOLE] SessionCommand for session '{post["ID"]}' accessed via JWT by '{token.Payload.Username}' from '{headers["remote_addr"]}' with command '{post["COMMAND"]}'.");
+                    m_log.Info(string.Format("[REMOTECONSOLE] SessionCommand for session '{0}' accessed via JWT by '{1}' from '{2}' with command '{3}'.",
+                        post["ID"], token.Payload.Username, headers["remote_addr"], post["COMMAND"]));
                 }
                 catch (JWTokenException jte)
                 {
-                    m_log.Error($"[REMOTECONSOLE] Failure with JWToken in SessionCommand from '{headers["remote_addr"]}': {jte}");
+                    m_log.Error(string.Format("[REMOTECONSOLE] Failure with JWToken in SessionCommand from '{0}': {1}", headers["remote_addr"], jte));
                     return reply;
                 }
             }
             else
             {
-                m_log.Warn($"[REMOTECONSOLE] SessionCommand for session '{post["ID"]}' from '{headers["remote_addr"]}' being accessed without Authorization header!");
+                m_log.Warn(string.Format("[REMOTECONSOLE] SessionCommand for session '{0}' from '{1}' being accessed without Authorization header!", post["ID"], headers["remote_addr"]));
             }
             // BUG: Longstanding issue: if someone gets ahold of, or guesses, the ID of another user they can send comamnds to the console.
             // The only way I can think to close this bug is to associate each session with something the user cannot change. Not sure, but maybe the IP address of the connection would work?
@@ -601,7 +604,7 @@ namespace OpenSim.Framework.Console
             {
                 if (!authHeader.StartsWith("Bearer ", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    m_log.Warn($"[REMOTECONSOLE] ReadResponses JWT Authorization header format failure from '{httpRequest.RemoteIPEndPoint}'.");
+                    m_log.Warn(string.Format("[REMOTECONSOLE] ReadResponses JWT Authorization header format failure from '{0}'.", httpRequest.RemoteIPEndPoint));
                     return;
                 }
 
@@ -618,21 +621,22 @@ namespace OpenSim.Framework.Console
                     // TODO: Make the scope strings come from some central list that can be registered into?
                     if (token.Payload.Scope != "remote-console")
                     {
-                        m_log.Warn($"[REMOTECONSOLE] ReadResponses invalid/expired/wrong scope JWToken from '{httpRequest.RemoteIPEndPoint}'.");
+                        m_log.Warn(string.Format("[REMOTECONSOLE] ReadResponses invalid/expired/wrong scope JWToken from '{0}'.", httpRequest.RemoteIPEndPoint));
                         return;
                     }
 
-                    m_log.Info($"[REMOTECONSOLE] ReadResponses for session '{uri_tmp}' accessed via JWT by '{token.Payload.Username}' from '{httpRequest.RemoteIPEndPoint}'.");
+                    m_log.Info(string.Format("[REMOTECONSOLE] ReadResponses for session '{0}' accessed via JWT by '{1}' from '{2}'.",
+                        uri_tmp, token.Payload.Username, httpRequest.RemoteIPEndPoint));
                 }
                 catch (JWTokenException jte)
                 {
-                    m_log.Error($"[REMOTECONSOLE] Failure with JWToken in ReadResponses from '{httpRequest.RemoteIPEndPoint}': {jte}");
+                    m_log.Error(string.Format("[REMOTECONSOLE] Failure with JWToken in ReadResponses from '{0}': {1}", httpRequest.RemoteIPEndPoint, jte));
                     return;
                 }
             }
             else
             {
-                m_log.Warn($"[REMOTECONSOLE] ReadResponses for session '{uri_tmp}' from '{httpRequest.RemoteIPEndPoint}' being accessed without Authorization header!");
+                m_log.Warn(string.Format("[REMOTECONSOLE] ReadResponses for session '{0}' from '{1}' being accessed without Authorization header!", uri_tmp, httpRequest.RemoteIPEndPoint));
             }
             // BUG: Longstanding issue: if someone gets ahold of, or guesses, the ID of another user they can send comamnds to the console.
             // The only way I can think to close this bug is to associate each session with something the user cannot change. Not sure, but maybe the IP address of the connection would work?

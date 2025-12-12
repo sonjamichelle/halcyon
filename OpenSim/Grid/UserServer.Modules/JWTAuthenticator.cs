@@ -146,7 +146,7 @@ namespace OpenSim.Grid.UserServer.Modules
             }
             catch (AuthenticationException ae)
             {
-                m_log.Warn($"[JWTAUTH] Failed attempt to get token from {httpRequest.RemoteIPEndPoint} for user '{username}'. Error: {ae.Cause}");
+                m_log.Warn(string.Format("[JWTAUTH] Failed attempt to get token from {0} for user '{1}'. Error: {2}", httpRequest.RemoteIPEndPoint, username, ae.Cause));
                 return JWTAuthErrors.AuthFailed(ae.Cause.ToString());
             }
         }
@@ -163,4 +163,3 @@ namespace OpenSim.Grid.UserServer.Modules
     }
 
 }
-

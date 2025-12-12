@@ -115,10 +115,28 @@
   <Compile Include="IHypergridServices.cs">
     <SubType>Code</SubType>
   </Compile>
+  <Compile Include="GridRegion.cs">
+    <SubType>Code</SubType>
+  </Compile>
+  <Compile Include="FriendInfo.cs">
+    <SubType>Code</SubType>
+  </Compile>
+  <Compile Include="EntityTransferContext.cs">
+    <SubType>Code</SubType>
+  </Compile>
   <Compile Include="IInventoryService.cs">
     <SubType>Code</SubType>
   </Compile>
   <Compile Include="ILibraryService.cs">
+    <SubType>Code</SubType>
+  </Compile>
+  <Compile Include="IUserAccountService.cs">
+    <SubType>Code</SubType>
+  </Compile>
+  <Compile Include="ISimulationService.cs">
+    <SubType>Code</SubType>
+  </Compile>
+  <Compile Include="GridInfo.cs">
     <SubType>Code</SubType>
   </Compile>
   <Compile Include="IUserService.cs">

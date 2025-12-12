@@ -160,6 +160,10 @@
 			<Name>System.Core</Name>
 		<Private>False</Private>
 		</Reference>
+		<Reference Include="System.Net.Http">
+			<Name>System.Net.Http</Name>
+		<Private>False</Private>
+		</Reference>
 		<Reference Include="System.Data">
 			<Name>System.Data</Name>
 		<Private>False</Private>
@@ -676,6 +680,12 @@
 		<SubType>Code</SubType>
 		</Compile>
 		<Compile Include="Geom\Box.cs">
+		<SubType>Code</SubType>
+		</Compile>
+		<Compile Include="UserAccount.cs">
+		<SubType>Code</SubType>
+		</Compile>
+		<Compile Include="WebUtil.cs">
 		<SubType>Code</SubType>
 		</Compile>
 	</ItemGroup>

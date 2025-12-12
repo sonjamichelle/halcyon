@@ -21,9 +21,9 @@ namespace InWorldz.Testing
             throw new System.NotImplementedException();
         }
 
-        public Scene World { get; }
+        public Scene World { get; private set; }
 
-        public IScriptModule ScriptModule { get; }
+        public IScriptModule ScriptModule { get; private set; }
 
         public bool PostScriptEvent(UUID itemID, EventParams parms)
         {
@@ -75,11 +75,11 @@ namespace InWorldz.Testing
             throw new System.NotImplementedException();
         }
 
-        public IConfig Config { get; }
+        public IConfig Config { get; private set; }
 
-        public IConfigSource ConfigSource { get; }
+        public IConfigSource ConfigSource { get; private set; }
 
-        public string ScriptEngineName { get; }
+        public string ScriptEngineName { get; private set; }
 
         public IScriptApi GetApi(UUID itemID, string name)
         {

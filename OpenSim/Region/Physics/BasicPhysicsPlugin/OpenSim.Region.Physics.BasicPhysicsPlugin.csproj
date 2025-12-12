@@ -64,16 +64,26 @@
 	  <PlatformTarget>x64</PlatformTarget>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Reference Include="C5" >
-		  <Name>C5</Name>
-		<HintPath>..\..\..\..\bin\C5.dll</HintPath>
+  <Reference Include="C5" >
+	  <Name>C5</Name>
+	<HintPath>..\..\..\..\bin\C5.dll</HintPath>
 		<Private>False</Private>
-	  </Reference>
-	  <Reference Include="LibreMetaverse.Types" >
-		  <Name>LibreMetaverse.Types</Name>
-		<HintPath>..\..\..\..\bin\LibreMetaverse.Types.dll</HintPath>
+  </Reference>
+  <Reference Include="LibreMetaverse">
+	  <Name>LibreMetaverse</Name>
+	<HintPath>..\..\..\..\bin\LibreMetaverse.dll</HintPath>
 		<Private>False</Private>
-	  </Reference>
+  </Reference>
+  <Reference Include="LibreMetaverse.StructuredData">
+	  <Name>LibreMetaverse.StructuredData</Name>
+	<HintPath>..\..\..\..\bin\LibreMetaverse.StructuredData.dll</HintPath>
+		<Private>False</Private>
+  </Reference>
+  <Reference Include="LibreMetaverse.Types" >
+	  <Name>LibreMetaverse.Types</Name>
+	<HintPath>..\..\..\..\bin\LibreMetaverse.Types.dll</HintPath>
+		<Private>False</Private>
+  </Reference>
 	  <Reference Include="log4net" >
 		  <Name>log4net</Name>
 		<HintPath>..\..\..\..\bin\log4net.dll</HintPath>
@@ -89,11 +99,12 @@
 		<HintPath>..\..\..\..\bin\protobuf-net.dll</HintPath>
 		<Private>False</Private>
 	  </Reference>
-	  <Reference Include="System" >
-		  <Name>System</Name>
-		<Private>False</Private>
-	  </Reference>
-	</ItemGroup>
+  <Reference Include="System" >
+	  <Name>System</Name>
+	<Private>False</Private>
+  </Reference>
+  <Reference Include="System.Xml" />
+ </ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\Framework\OpenSim.Framework.csproj">
 		<Name>OpenSim.Framework</Name>

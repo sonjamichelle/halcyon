@@ -59,7 +59,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
         public UserAgentServiceConnector(IConfigSource config)
         {
-            GridInfo tmp = new GridInfo(config);
+            GridInfo tmp = new GridInfo();
 
             string serviceURI = tmp.HomeURL;
 
@@ -153,8 +153,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(m_ServerURL, hclient);
+                response = request.Send(m_ServerURL, 10000);
             }
             catch (Exception e)
             {
@@ -190,7 +189,9 @@ namespace OpenSim.Services.Connectors.Hypergrid
 
             GridRegion region = new GridRegion();
 
-            UUID.TryParse((string)hash["uuid"], out region.RegionID);
+            UUID parsedUuid;
+            if (UUID.TryParse((string)hash["uuid"], out parsedUuid))
+                region.RegionID = parsedUuid;
             int n = 0;
             if (hash["x"] != null)
             {
@@ -205,12 +206,12 @@ namespace OpenSim.Services.Connectors.Hypergrid
             if (hash["size_x"] != null)
             {
                 Int32.TryParse((string)hash["size_x"], out n);
-                region.RegionSizeX = n;
+                region.RegionSizeX = (uint)n;
             }
             if (hash["size_y"] != null)
             {
                 Int32.TryParse((string)hash["size_y"], out n);
-                region.RegionSizeY = n;
+                region.RegionSizeY = (uint)n;
             }
             if (hash["region_name"] != null)
             {
@@ -319,8 +320,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(m_ServerURL, hclient);
+                response = request.Send(m_ServerURL, 10000);
             }
             catch
             {
@@ -383,8 +383,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(m_ServerURL, hclient);
+                response = request.Send(m_ServerURL, 10000);
             }
             catch
             {
@@ -524,8 +523,7 @@ namespace OpenSim.Services.Connectors.Hypergrid
             XmlRpcResponse response = null;
             try
             {
-                using HttpClient hclient = WebUtil.GetNewGlobalHttpClient(10000);
-                response = request.Send(m_ServerURL, hclient);
+                response = request.Send(m_ServerURL, 10000);
             }
             catch (Exception e)
             {

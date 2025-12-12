@@ -72,9 +72,9 @@ namespace OpenSim.Services.HypergridService
 
         protected static bool m_BypassClientVerification;
 
-        private static readonly Dictionary<int, bool> m_ForeignTripsAllowed = new();
-        private static readonly Dictionary<int, List<string>> m_TripsAllowedExceptions = new();
-        private static readonly Dictionary<int, List<string>> m_TripsDisallowedExceptions = new();
+        private static readonly Dictionary<int, bool> m_ForeignTripsAllowed = new Dictionary<int, bool>();
+        private static readonly Dictionary<int, List<string>> m_TripsAllowedExceptions = new Dictionary<int, List<string>>();
+        private static readonly Dictionary<int, List<string>> m_TripsDisallowedExceptions = new Dictionary<int, List<string>>();
 
         public UserAgentService(IConfigSource config) : this(config, null)
         {
@@ -83,7 +83,7 @@ namespace OpenSim.Services.HypergridService
         public UserAgentService(IConfigSource config, IFriendsSimConnector friendsConnector)
             : base(config)
         {
-            if (friendsConnector is not null)
+            if (friendsConnector != null)
                 m_FriendsLocalSimConnector = friendsConnector;
 
             if (!m_Initialized)
@@ -200,7 +200,7 @@ namespace OpenSim.Services.HypergridService
 
             GridRegion home = null;
             GridUserInfo uinfo = m_GridUserService.GetGridUserInfo(userID.ToString());
-            if (uinfo is not null)
+            if (uinfo != null)
             {
                 if (uinfo.HomeRegionID.IsNotZero())
                 {
@@ -211,7 +211,7 @@ namespace OpenSim.Services.HypergridService
                 if (home is null)
                 {
                     List<GridRegion> defs = m_GridService.GetDefaultRegions(UUID.Zero);
-                    if (defs is not null && defs.Count > 0)
+                    if (defs != null && defs.Count > 0)
                         home = defs[0];
                 }
             }
@@ -269,7 +269,7 @@ namespace OpenSim.Services.HypergridService
             agentCircuit.ServiceSessionID = region.ServerURI + ";" + UUID.Random();
             TravelingAgentInfo travel = CreateTravelInfo(agentCircuit, region, fromLogin, out TravelingAgentInfo old);
 
-            if (!fromLogin && old is not null && !string.IsNullOrEmpty(old.ClientIPAddress))
+            if (!fromLogin && old != null && !string.IsNullOrEmpty(old.ClientIPAddress))
             {
                 m_log.DebugFormat("[USER AGENT SERVICE]: stored IP = {0}. Old circuit IP: {1}", old.ClientIPAddress, agentCircuit.IPAddress);
                 agentCircuit.IPAddress = old.ClientIPAddress;
@@ -285,7 +285,7 @@ namespace OpenSim.Services.HypergridService
             }
             else
             {
-                EntityTransferContext ctx = new();
+                EntityTransferContext ctx = new EntityTransferContext();
                 success = m_GatekeeperConnector.CreateAgent(source, region, agentCircuit, (uint)Constants.TeleportFlags.ViaLogin, ctx, out reason);
             }
 
@@ -294,7 +294,7 @@ namespace OpenSim.Services.HypergridService
                 m_log.DebugFormat("[USER AGENT SERVICE]: Unable to login user {0} {1} to grid {2}, reason: {3}",
                     agentCircuit.firstname, agentCircuit.lastname, region.ServerURI, reason);
 
-                if (old is not null)
+                if (old != null)
                     StoreTravelInfo(old);
                 else
                     m_Database.Delete(agentCircuit.SessionID);
@@ -317,7 +317,7 @@ namespace OpenSim.Services.HypergridService
             HGTravelingData hgt = m_Database.Get(agentCircuit.SessionID);
             existing = null;
 
-            if (hgt is not null)
+            if (hgt != null)
             {
                 existing = new TravelingAgentInfo(hgt);
                 agentCircuit.IPAddress = existing.ClientIPAddress;
@@ -346,7 +346,7 @@ namespace OpenSim.Services.HypergridService
             m_Database.Delete(sessionID);
 
             GridUserInfo guinfo = m_GridUserService.GetGridUserInfo(userID.ToString());
-            if (guinfo is not null)
+            if (guinfo != null)
                 m_GridUserService.LoggedOut(userID.ToString(), sessionID, guinfo.LastRegionID, guinfo.LastPosition, guinfo.LastLookAt);
         }
 
@@ -407,11 +407,11 @@ namespace OpenSim.Services.HypergridService
                 return new List<UUID>();
             }
 
-            List<UUID> localFriendsOnline = new();
+            List<UUID> localFriendsOnline = new List<UUID>();
 
             m_log.DebugFormat("[USER AGENT SERVICE]: Status notification: foreign user {0} wants to notify {1} local friends", foreignUserID, friends.Count);
 
-            List<string> usersToBeNotified = new();
+            List<string> usersToBeNotified = new List<string>();
             foreach (string uui in friends)
             {
                 if (Util.ParseUniversalUserIdentifier(uui, out UUID localUserID, out _, out _, out _, out string secret))
@@ -441,7 +441,7 @@ namespace OpenSim.Services.HypergridService
                         break;
                     }
                 }
-                if (friendSession is not null)
+                if (friendSession != null)
                 {
                     ForwardStatusNotificationToSim(friendSession.RegionID, foreignUserID, friendSession.UserID, online);
                     usersToBeNotified.Remove(friendSession.UserID.ToString());
@@ -464,7 +464,7 @@ namespace OpenSim.Services.HypergridService
         {
             if (UUID.TryParse(user, out UUID userID))
             {
-                if (m_FriendsLocalSimConnector is not null)
+                if (m_FriendsLocalSimConnector != null)
                 {
                     m_log.DebugFormat("[USER AGENT SERVICE]: Local Notify, user {0} is {1}", foreignUserID, (online ? "online" : "offline"));
                     m_FriendsLocalSimConnector.StatusNotify(foreignUserID, userID, online);
@@ -472,7 +472,7 @@ namespace OpenSim.Services.HypergridService
                 else
                 {
                     GridRegion region = m_GridService.GetRegionByUUID(UUID.Zero, regionID);
-                    if (region is not null)
+                    if (region != null)
                     {
                         m_log.DebugFormat("[USER AGENT SERVICE]: Remote Notify to region {0}, user {1} is {2}", region.RegionName, foreignUserID, (online ? "online" : "offline"));
                         m_FriendsSimConnector.StatusNotify(region, foreignUserID, userID.ToString(), online);
@@ -483,7 +483,7 @@ namespace OpenSim.Services.HypergridService
 
         public List<UUID> GetOnlineFriends(UUID foreignUserID, List<string> friends)
         {
-            List<UUID> online = new();
+            List<UUID> online = new List<UUID>();
 
             if (m_FriendsService is null || m_PresenceService is null)
             {
@@ -493,7 +493,7 @@ namespace OpenSim.Services.HypergridService
 
             m_log.DebugFormat("[USER AGENT SERVICE]: Foreign user {0} wants to know status of {1} local friends", foreignUserID, friends.Count);
 
-            List<string> usersToBeNotified = new();
+            List<string> usersToBeNotified = new List<string>();
             foreach (string uui in friends)
             {
                 if (Util.ParseUniversalUserIdentifier(uui, out UUID localUserID, out _, out _, out _, out string secret))
@@ -513,7 +513,7 @@ namespace OpenSim.Services.HypergridService
             m_log.DebugFormat("[USER AGENT SERVICE]: GetOnlineFriends: user has {0} local friends with status rights", usersToBeNotified.Count);
 
             PresenceInfo[] friendSessions = m_PresenceService.GetAgents(usersToBeNotified.ToArray());
-            if (friendSessions is not null && friendSessions.Length > 0)
+            if (friendSessions != null && friendSessions.Length > 0)
             {
                 foreach (PresenceInfo pi in friendSessions)
                 {
@@ -527,7 +527,7 @@ namespace OpenSim.Services.HypergridService
 
         public Dictionary<string, object> GetUserInfo(UUID userID)
         {
-            Dictionary<string, object> info = new();
+            Dictionary<string, object> info = new Dictionary<string, object>();
 
             if (m_UserAccountService is null)
             {
@@ -592,13 +592,13 @@ namespace OpenSim.Services.HypergridService
         public string GetUUI(UUID userID, UUID targetUserID)
         {
             UserAccount account = m_UserAccountService.GetUserAccount(UUID.Zero, targetUserID);
-            if (account is not null)
+            if (account != null)
                 return targetUserID.ToString() + ";" + m_GridName + ";" + account.FirstName + " " + account.LastName;
 
-            if (m_FriendsService is not null)
+            if (m_FriendsService != null)
             {
                 FriendInfo[] friends = m_FriendsService.GetFriends(userID);
-                if (friends is not null && friends.Length > 0)
+                if (friends != null && friends.Length > 0)
                 {
                     foreach (FriendInfo f in friends)
                         if (f.Friend.StartsWith(targetUserID.ToString()))
@@ -615,7 +615,7 @@ namespace OpenSim.Services.HypergridService
         public UUID GetUUID(String first, String last)
         {
             UserAccount account = m_UserAccountService.GetUserAccount(UUID.Zero, first, last);
-            if (account is not null)
+            if (account != null)
             {
                 if (account.UserLevel < m_LevelOutsideContacts)
                     return UUID.Zero;
@@ -653,7 +653,7 @@ namespace OpenSim.Services.HypergridService
             if (travel is null)
                 return;
 
-            HGTravelingData hgt = new()
+            HGTravelingData hgt = new HGTravelingData()
             {
                 SessionID = travel.SessionID,
                 UserID = travel.UserID,
@@ -681,7 +681,7 @@ namespace OpenSim.Services.HypergridService
 
         public TravelingAgentInfo(HGTravelingData t)
         {
-            if (t.Data is not null)
+            if (t.Data != null)
             {
                 SessionID = new UUID(t.SessionID);
                 UserID = new UUID(t.UserID);
@@ -693,7 +693,7 @@ namespace OpenSim.Services.HypergridService
 
         public TravelingAgentInfo(TravelingAgentInfo old)
         {
-            if (old is not null)
+            if (old != null)
             {
                 SessionID = old.SessionID;
                 UserID = old.UserID;

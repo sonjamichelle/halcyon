@@ -183,7 +183,10 @@ namespace OpenSim.Grid.UserServer
             IConfig inventoryConfig = defaultConfig.Configs["Inventory"];
             IConfig jwtConfig = defaultConfig.Configs["JWT"];
 
-            m_useJwt = jwtConfig?.GetBoolean("enabled") ?? false;
+            if (jwtConfig != null)
+                m_useJwt = jwtConfig.GetBoolean("enabled");
+            else
+                m_useJwt = false;
 
             OpenSim.Framework.ConfigSettings settings = new ConfigSettings();
             settings.InventoryPlugin = inventoryConfig.GetString("inventory_plugin");

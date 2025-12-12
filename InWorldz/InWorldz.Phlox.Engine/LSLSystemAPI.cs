@@ -18614,10 +18614,7 @@ namespace InWorldz.Phlox.Engine
                 return result;
 
             IEnumerable<string> keys = m_host.ParentGroup.FindLinksetDataKeys(pattern, start, count);
-            foreach (string key in keys)
-            {
-                result.Add(key);
-            }
+            result = new LSL_List(keys.ToArray());
 
             return result;
         }

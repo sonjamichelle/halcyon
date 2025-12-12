@@ -33,7 +33,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         private Scene m_aScene;
         private IUserAccountService m_UserAccountService;
 
-        public void Initialise(IConfigSource source) { }
+        public void Initialize(IConfigSource source) { }
 
         public void AddRegion(Scene scene)
         {
@@ -43,30 +43,13 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
                 OnInventoryArchiveSaved += SaveInvConsoleCommandCompleted;
                 OnInventoryArchiveLoaded += LoadInvConsoleCommandCompleted;
 
-                scene.AddCommand(
-                    "Archiving", this, "load iar",
+                scene.AddCommand(this, "load iar",
                     "load iar [-m|--merge] <first> <last> <inventory path> <password> [<IAR path>]",
                     "Load user inventory archive (IAR).",
-                    "-m|--merge merges into existing folders where possible."
-                    + "<first> user's first name.\n"
-                    + "<last> user's last name.\n"
-                    + "<inventory path> target path inside the user's inventory.\n"
-                    + "<password> user's password.\n"
-                    + "<IAR path> filesystem path or URI; defaults to user-inventory.iar in current directory.",
                     HandleLoadInvConsoleCommand);
 
-                scene.AddCommand(
-                    "Archiving", this, "save iar",
+                scene.AddCommand(this, "save iar",
                     "save iar [-h|--home=<url>] [--noassets | --skipbadassets] [--perm=<CTM>] <first> <last> <inventory path> <password> [<IAR path>]",
-                    "Save user inventory archive (IAR).",
-                    "<first> user's first name.\n"
-                    + "<last> user's last name.\n"
-                    + "<inventory path> path inside the user's inventory for folder/item to save.\n"
-                    + "<IAR path> filesystem path to save; defaults to user-inventory.iar in current directory.\n"
-                    + "-h|--home=<url> adds profile service URL to saved info.\n"
-                    + "--noassets skips saving assets.\n"
-                    + "--skipbadassets skips items with missing main assets.\n"
-                    + "--perm=<CTM> require perms (Copy/Transfer/Modify) to include item.",
                     HandleSaveInvConsoleCommand);
 
                 m_aScene = scene;
@@ -78,7 +61,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         public void RemoveRegion(Scene scene) { }
         public void Close() { }
         public void RegionLoaded(Scene scene) { }
-        public void PostInitialise() { }
+        public void PostInitialize() { }
         public Type ReplaceableInterface { get { return null; } }
         public string Name { get { return "Inventory Archiver Module"; } }
 
@@ -120,32 +103,27 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
         public bool ArchiveInventory(
             UUID id, string firstName, string lastName, string invPath, string pass, Stream saveStream)
         {
-            return ArchiveInventory(id, firstName, lastName, invPath, pass, saveStream, new Dictionary<string, object>());
+            m_log.Warn("[INVENTORY ARCHIVER]: ArchiveInventory not implemented on Halcyon yet.");
+            return false;
+        }
+
+        // Interface overload without password (legacy callers can supply one via invPath if needed).
+        public bool ArchiveInventory(UUID id, string firstName, string lastName, string invPath, Stream saveStream, string perm = null, bool skipAssets = false, bool skipNoPerms = false)
+        {
+            return ArchiveInventory(id, firstName, lastName, invPath, "notused", saveStream, new Dictionary<string, object>
+            {
+                { "perm", perm },
+                { "skipassets", skipAssets },
+                { "skipbadassets", skipNoPerms }
+            });
         }
 
         public bool ArchiveInventory(
             UUID id, string firstName, string lastName, string invPath, string pass, Stream saveStream,
             Dictionary<string, object> options)
         {
-            if (m_scenes.Count == 0)
-                return false;
-
-            UserAccount userInfo = GetUserInfo(firstName, lastName, pass);
-            if (userInfo == null)
-                return false;
-
-            try
-            {
-                InventoryArchiveWriteRequest iarReq = new InventoryArchiveWriteRequest(id, this, m_aScene, userInfo, invPath, saveStream);
-                iarReq.Execute(options, UserAccountService);
-            }
-            catch (EntryPointNotFoundException e)
-            {
-                m_log.Error("[INVENTORY ARCHIVER]: zlib/mono mismatch when creating compression stream", e);
-                return false;
-            }
-
-            return true;
+            m_log.Warn("[INVENTORY ARCHIVER]: ArchiveInventory not implemented on Halcyon yet.");
+            return false;
         }
 
         public void ArchiveInventory(UUID id, string firstName, string lastName, string invPath, string savePath)
@@ -157,17 +135,8 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
 
         public bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, Stream loadStream, bool merge)
         {
-            if (m_scenes.Count == 0)
-                return false;
-
-            UserAccount userInfo = GetUserInfo(firstName, lastName, pass);
-            if (userInfo == null)
-                return false;
-
-            InventoryArchiveReadRequest request =
-                new InventoryArchiveReadRequest(id, this, m_aScene.InventoryService, m_aScene.AssetService, UserAccountService, userInfo, invPath, loadStream, merge);
-            request.Execute();
-            return true;
+            m_log.Warn("[INVENTORY ARCHIVER]: DearchiveInventory not implemented on Halcyon yet.");
+            return false;
         }
 
         public bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, string pass, string loadPath, bool merge)
@@ -176,6 +145,12 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver
             {
                 return DearchiveInventory(id, firstName, lastName, invPath, pass, reader.BaseStream, merge);
             }
+        }
+
+        // Interface overload without password (legacy behavior).
+        public bool DearchiveInventory(UUID id, string firstName, string lastName, string invPath, Stream loadStream, bool merge)
+        {
+            return DearchiveInventory(id, firstName, lastName, invPath, "notused", loadStream, merge);
         }
 
         private UserAccount GetUserInfo(string firstName, string lastName, string pass)

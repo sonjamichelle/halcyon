@@ -63,8 +63,8 @@ namespace OpenSim.Services.HypergridService
         private static string m_DeniedMacs = string.Empty;
         private static string m_DeniedID0s = string.Empty;
         private static bool m_ForeignAgentsAllowed = true;
-        private static readonly List<string> m_ForeignsAllowedExceptions = new();
-        private static readonly List<string> m_ForeignsDisallowedExceptions = new();
+        private static readonly List<string> m_ForeignsAllowedExceptions = new List<string>();
+        private static readonly List<string> m_ForeignsDisallowedExceptions = new List<string>();
 
         private static UUID m_ScopeID;
         private static bool m_AllowTeleportsToAnyRegion;
@@ -251,7 +251,7 @@ namespace OpenSim.Services.HypergridService
                 region = m_GridService.GetLocalRegionByName(m_ScopeID, regionName);
                 if (region is null)
                 {
-                    m_log.DebugFormat($"[GATEKEEPER SERVICE]: LinkLocalRegion could not find local region {regionName}");
+                    m_log.DebugFormat("[GATEKEEPER SERVICE]: LinkLocalRegion could not find local region {0}", regionName);
                     reason = "Region not found";
                     return false;
                 }
@@ -518,7 +518,7 @@ namespace OpenSim.Services.HypergridService
 
             m_log.DebugFormat("[GATEKEEPER SERVICE]: Launching {0}, Teleport Flags: {1}", aCircuit.Name, loginFlag);
 
-            EntityTransferContext ctx = new();
+                EntityTransferContext ctx = new EntityTransferContext();
 
             if (!m_SimulationService.QueryAccess(
                 destination, aCircuit.AgentID, aCircuit.ServiceURLs["HomeURI"].ToString(),

@@ -293,13 +293,17 @@ namespace OpenSim.Framework
                         if (env_var_value != null)
                         {
                             // Log the use of an environment variable just in case someone didn't expect it.
-                            m_log.Info($"[CONFIG]: Parameter [{configOption.configurationKey}] started with '$'. Value replaced with environment variable '{env_var_key}' value '{env_var_value}'.");
+                            m_log.Info(string.Format(
+                                "[CONFIG]: Parameter [{0}] started with '$'. Value replaced with environment variable '{1}' value '{2}'.",
+                                configOption.configurationKey, env_var_key, env_var_value));
                             console_result = env_var_value;
                         }
                         else
                         {
                             // Unless there is no such variable, in which case just move on with the original and let the user know that happened.
-                            m_log.Warn($"[CONFIG]: Parameter [{configOption.configurationKey}] started with '$', however there was no environment variable found with the name '{env_var_key}'.");
+                            m_log.Warn(string.Format(
+                                "[CONFIG]: Parameter [{0}] started with '$', however there was no environment variable found with the name '{1}'.",
+                                configOption.configurationKey, env_var_key));
                         }
                     }
 

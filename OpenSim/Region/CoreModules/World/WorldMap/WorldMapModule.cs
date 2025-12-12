@@ -837,7 +837,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             if (forceRefresh)
             {
                 // Delay/reset the timer as the map's getting updated now.
-                mapTileUpdateTimer?.Stop();
+                if (mapTileUpdateTimer != null)
+                    mapTileUpdateTimer.Stop();
 
                 m_log.Debug("[WORLD MAP]: Forcing refresh of map tile");
 
@@ -849,7 +850,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 finally // Make sure the timer actually gets restarted even in an Exceptional situation.
                 {
                     // Do the reset after the update so that the above update's time delay cannot cause overlaps.
-                    mapTileUpdateTimer?.Start();
+                    if (mapTileUpdateTimer != null)
+                        mapTileUpdateTimer.Start();
                 }
             }
 
@@ -1178,7 +1180,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             if (readyToDrawMap && lastMapPushTime + minimumMapPushTime < DateTime.Now)
             {
                 // Delay/reset the timer as the map's getting updated now.
-                mapTileUpdateTimer?.Stop();
+                if (mapTileUpdateTimer != null)
+                    mapTileUpdateTimer.Stop();
 
                 m_log.Info("[WORLD MAP] Rebuilding map tile on taint as the minimum wait time has passed.");
 
@@ -1190,7 +1193,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 finally // Make sure the timer actually gets restarted even in an Exceptional situation.
                 {
                     // Do the reset after the update so that the above update's time delay cannot cause overlaps.
-                    mapTileUpdateTimer?.Start();
+                    if (mapTileUpdateTimer != null)
+                        mapTileUpdateTimer.Start();
                 }
             }
         }
@@ -1203,7 +1207,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             if (m_Enabled && isMapTainted && lastMapPushTime + minimumMapPushTime < DateTime.Now)
             {
                 // Delay/reset the timer as the map's getting updated now.
-                mapTileUpdateTimer?.Stop();
+                if (mapTileUpdateTimer != null)
+                    mapTileUpdateTimer.Stop();
 
                 m_log.Info("[WORLD MAP] Rebuilding map tile; map was tainted and the maximum wait time has expired.");
 
@@ -1215,7 +1220,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 finally // Make sure the timer actually gets restarted even in an Exceptional situation.
                 {
                     // Do the reset after the update so that the above update's time delay cannot cause overlaps.
-                    mapTileUpdateTimer?.Start();
+                    if (mapTileUpdateTimer != null)
+                        mapTileUpdateTimer.Start();
                 }
             }
         }

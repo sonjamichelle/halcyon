@@ -30,8 +30,15 @@ namespace OpenSim.Server.Handlers.Hypergrid
                 name = string.Empty;
 
             m_log.DebugFormat("[HG Handler]: XMLRequest to link to {0} from {1}", (name.Length == 0) ? "default region" : name, remoteClient.Address.ToString());
-            bool success = m_GatekeeperService.LinkLocalRegion(name, out UUID regionID, out ulong regionHandle, out string externalName,
-                out string imageURL, out string reason, out int sizeX, out int sizeY);
+            UUID regionID;
+            ulong regionHandle;
+            string externalName;
+            string imageURL;
+            string reason;
+            int sizeX;
+            int sizeY;
+            bool success = m_GatekeeperService.LinkLocalRegion(name, out regionID, out regionHandle, out externalName,
+                out imageURL, out reason, out sizeX, out sizeY);
 
             Hashtable hash = new Hashtable();
             hash["result"] = success.ToString();
