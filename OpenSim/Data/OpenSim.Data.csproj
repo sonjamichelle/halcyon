@@ -122,6 +122,9 @@
     <Compile Include="IHGTravelingData.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="IXInventoryData.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="CheckedInventoryStorage.cs">
       <SubType>Code</SubType>
     </Compile>

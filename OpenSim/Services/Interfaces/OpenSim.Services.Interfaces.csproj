@@ -118,9 +118,6 @@
   <Compile Include="GridRegion.cs">
     <SubType>Code</SubType>
   </Compile>
-  <Compile Include="FriendInfo.cs">
-    <SubType>Code</SubType>
-  </Compile>
   <Compile Include="EntityTransferContext.cs">
     <SubType>Code</SubType>
   </Compile>
@@ -130,18 +127,36 @@
   <Compile Include="ILibraryService.cs">
     <SubType>Code</SubType>
   </Compile>
-  <Compile Include="IUserAccountService.cs">
-    <SubType>Code</SubType>
-  </Compile>
-  <Compile Include="ISimulationService.cs">
-    <SubType>Code</SubType>
-  </Compile>
-  <Compile Include="GridInfo.cs">
-    <SubType>Code</SubType>
-  </Compile>
-  <Compile Include="IUserService.cs">
-    <SubType>Code</SubType>
-  </Compile>
+	  <Compile Include="IUserAccountService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="ISimulationService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IGridUserService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IBansService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IFriendsService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="GridInfo.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IUserService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IGridService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IPresenceService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="IOfflineIMService.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 	</ItemGroup>
 	<Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 	<PropertyGroup>

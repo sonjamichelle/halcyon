@@ -217,9 +217,15 @@
 		<Compile Include="AssetAlreadyExistsException.cs">
 		<SubType>Code</SubType>
 		</Compile>
-		<Compile Include="AssetBase.cs">
-		<SubType>Code</SubType>
-		</Compile>
+	  <Compile Include="AssetBase.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="ExpiringCacheOS.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	  <Compile Include="AssetPermissions.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 		<Compile Include="AssetConfig.cs">
 		<SubType>Code</SubType>
 		</Compile>

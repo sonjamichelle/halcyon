@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) Contributors, http://opensimulator.org/
  * See CONTRIBUTORS.TXT for a full list of copyright holders.
  *
@@ -24,36 +24,25 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 using System;
 using System.Collections.Generic;
-using OpenMetaverse;
+
 using OpenSim.Framework;
+using OpenMetaverse;
 
-namespace OpenSim.Data
+namespace OpenSim.Services.Interfaces
 {
-    // This MUST be a ref type!
-    public class HGTravelingData
+    public interface IBansService
     {
-        public UUID SessionID;
-        public UUID UserID;
-        public Dictionary<string, string> Data;
-
-        public HGTravelingData()
-        {
-            Data = new Dictionary<string, string>();
-        }
+        /// <summary>
+        /// Are any of the given arguments banned from the grid?
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <param name="ip"></param>
+        /// <param name="id0"></param>
+        /// <param name="origin"></param>
+        /// <returns></returns>
+        bool IsBanned(string userID, string ip, string id0, string origin);
     }
 
-    /// <summary>
-    /// An interface for connecting to the user grid datastore
-    /// </summary>
-    public interface IHGTravelingData
-    {
-        HGTravelingData Get(UUID sessionID);
-        HGTravelingData[] GetSessions(UUID userID);
-        bool Store(HGTravelingData data);
-        bool Delete(UUID sessionID);
-        void DeleteOld();
-    }
 }

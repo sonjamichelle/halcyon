@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.24, for Win64 (x86_64)
 --
--- Host: 10.0.0.228    Database: inworldz
+-- Host: 10.0.0.228    Database: halcyon
 -- ------------------------------------------------------
 -- Server version	5.1.61-log
 
